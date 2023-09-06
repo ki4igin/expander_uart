@@ -32,26 +32,16 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-extern UART_HandleTypeDef huart4;
-
-extern UART_HandleTypeDef huart5;
-
-extern UART_HandleTypeDef huart7;
-
-extern UART_HandleTypeDef huart8;
-
-extern UART_HandleTypeDef huart9;
-
-extern UART_HandleTypeDef huart1;
-
-extern UART_HandleTypeDef huart2;
-
-extern UART_HandleTypeDef huart3;
-
-extern UART_HandleTypeDef huart6;
-
 /* USER CODE BEGIN Private defines */
+#define MASTER_BAUD 115200
+#define MASTER_DATAWIDTH LL_USART_DATAWIDTH_8B
+#define MASTER_STOPBITS LL_USART_STOPBITS_1
+#define MASTER_PARITY LL_USART_PARITY_NONE
 
+#define SLAVE_BAUD 115200
+#define SLAVE_DATAWIDTH LL_USART_DATAWIDTH_8B
+#define SLAVE_STOPBITS LL_USART_STOPBITS_1
+#define SLAVE_PARITY LL_USART_PARITY_NONE
 /* USER CODE END Private defines */
 
 void MX_UART4_Init(void);
