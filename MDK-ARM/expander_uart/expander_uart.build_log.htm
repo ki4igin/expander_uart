@@ -9,12 +9,12 @@ License Information: Veronika Kharitonova, BMSTU, LIC=R4HV2-9DNSM-QIS5M-X06GT-0M
  
 Tool Versions:
 Toolchain:       MDK-ARM Professional  Version: 5.38.0.0
-Toolchain Path:  C:\Keil_v5\ARM\ARMCC\Bin
-C Compiler:      Armcc.exe V5.06 update 7 (build 960)
-Assembler:       Armasm.exe V5.06 update 7 (build 960)
-Linker/Locator:  ArmLink.exe V5.06 update 7 (build 960)
-Library Manager: ArmAr.exe V5.06 update 7 (build 960)
-Hex Converter:   FromElf.exe V5.06 update 7 (build 960)
+Toolchain Path:  C:\Keil_v5\ARM\ARMCLANG\Bin
+C Compiler:      ArmClang.exe V6.19
+Assembler:       Armasm.exe V6.19
+Linker/Locator:  ArmLink.exe V6.19
+Library Manager: ArmAr.exe V6.19
+Hex Converter:   FromElf.exe V6.19
 CPU DLL:         SARMCM3.DLL V5.38.0.0
 Dialog DLL:      DCM.DLL V1.17.5.0
 Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.1.0.0
@@ -22,25 +22,15 @@ Dialog DLL:      TCM.DLL V1.56.4.0
  
 <h2>Project:</h2>
 F:\work\STM_proj\expander_uart\MDK-ARM\expander_uart.uvprojx
-Project File Date:  09/06/2023
+Project File Date:  11/09/2023
 
 <h2>Output:</h2>
-*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+*** Using Compiler 'V6.19', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'expander_uart'
-assembling startup_stm32f413xx.s...
 compiling main.c...
-compiling gpio.c...
 compiling usart.c...
-compiling system_stm32f4xx.c...
-compiling stm32f4xx_ll_gpio.c...
-compiling stm32f4xx_it.c...
-compiling stm32f4xx_ll_dma.c...
-compiling stm32f4xx_ll_usart.c...
-compiling stm32f4xx_ll_rcc.c...
-compiling stm32f4xx_ll_exti.c...
-compiling stm32f4xx_ll_utils.c...
 linking...
-Program Size: Code=3314 RO-data=530 RW-data=4 ZI-data=1636  
+Program Size: Code=4820 RO-data=528 RW-data=4 ZI-data=1644  
 FromELF: creating hex file...
 "expander_uart\expander_uart.axf" - 0 Error(s), 0 Warning(s).
 
@@ -66,7 +56,7 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.6.0
       Include file:  CMSIS/Core/Include/tz_context.h
-Build Time Elapsed:  00:00:13
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>

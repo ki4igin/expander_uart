@@ -28,6 +28,8 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 
+#include "stm32f4xx_ll_adc.h"
+#include "stm32f4xx_ll_i2c.h"
 #include "stm32f4xx_ll_rcc.h"
 #include "stm32f4xx_ll_bus.h"
 #include "stm32f4xx_ll_system.h"
@@ -45,7 +47,15 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "crc16.h"
+#include "uid_hash.h"
 
+#define DEBUG_GPIO GPIOD
+#define LED_GREEN_PIN LL_GPIO_PIN_4
+#define LED_RED_PIN LL_GPIO_PIN_5
+#define RELAY1_PIN LL_GPIO_PIN_0
+#define RELAY2_PIN LL_GPIO_PIN_1
+#define KEY_PIN LL_GPIO_PIN_6
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

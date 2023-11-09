@@ -42,6 +42,34 @@ extern "C" {
 #define SLAVE_DATAWIDTH LL_USART_DATAWIDTH_8B
 #define SLAVE_STOPBITS LL_USART_STOPBITS_1
 #define SLAVE_PARITY LL_USART_PARITY_NONE
+
+#define DATA_SIZE 32+6+2*4+2
+typedef struct usart_header
+{
+	uint32_t protocol;
+	uint32_t cnt : 16;
+	uint32_t dist : 8;
+	uint32_t flags : 8;
+	uint32_t src;
+	uint32_t dest;
+	uint32_t path[4];
+} usart_header;
+
+// should be sent before sending data
+typedef struct usart_chunk_head
+{
+	uint32_t id: 16;
+	uint32_t type: 16;
+	uint16_t payload_sz;
+} usart_chunk_head;
+
+typedef struct usart_packet
+{
+	usart_header header;
+	usart_chunk_head chunk_header;
+	uint32_t data[2];
+	uint16_t crc;
+} usart_packet;
 /* USER CODE END Private defines */
 
 void MX_UART4_Init(void);
