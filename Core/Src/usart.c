@@ -507,7 +507,7 @@ static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 	} while (len--);
 }
 
-void usart_data_processing(usart_packet *data, uint32_t uid)
+void usart_data_sending(usart_packet *data, uint32_t uid)
 {
 	uint32_t idx = data->header.dist & 0x3;
 	data->header.path[idx] = uid;
@@ -531,6 +531,63 @@ uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx
 		}
 	}
 	return 0;
+}
+
+uint32_t usart_flags_rx_processing (struct flags *flags)
+{
+	uint32_t idx = 0;
+	
+	if (flags->usart2_rx)
+	{
+		idx = IDX_USART2;
+		flags->usart2_rx = 0;
+	}
+	else if (flags->usart3_rx)
+	{
+		idx = IDX_USART3;
+		flags->usart3_rx = 0;
+	}
+	else if (flags->uart4_rx)
+	{
+		idx = IDX_UART4;
+		flags->uart4_rx = 0;
+	}
+	else if (flags->uart5_rx)
+	{
+		idx = IDX_UART5;
+		flags->uart5_rx = 0;
+	}
+	else if (flags->usart6_rx)
+	{
+		idx = IDX_USART6;
+		flags->usart6_rx = 0;
+	}
+	else if (flags->uart7_rx)
+	{
+		idx = IDX_UART7;
+		flags->uart7_rx = 0;
+	}
+	else if (flags->uart8_rx)
+	{
+		idx = IDX_UART8;
+		flags->uart8_rx = 0;
+	}
+	else if (flags->uart9_rx)
+	{
+		idx = IDX_UART9;
+		flags->uart9_rx = 0;
+	}
+	return idx;
+}
+
+void usart_data_processing(usart_packet usart_packets[8], struct flags *flags, uint32_t uid)
+{
+	uint32_t idx = 0;
+	if (!flags->usart1_tx) 
+	{
+		usart_flags_rx_processing(flags);
+		usart_data_sending(&usart_packets[idx], uid);
+	}
 }
 
 
