@@ -516,4 +516,22 @@ void usart_data_processing(usart_packet *data, uint32_t uid)
 	
 	usart_send(data, DATA_SIZE, USART1);
 }
+
+uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx)
+{
+	static uint32_t counter[8] = {0};
+	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
+  {
+		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
+		counter[idx]++;
+		if (counter[idx] > DATA_SIZE - 1)
+		{
+			counter[idx] = 0;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /* USER CODE END 1 */

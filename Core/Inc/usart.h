@@ -27,7 +27,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -44,6 +43,7 @@ extern "C" {
 #define SLAVE_PARITY LL_USART_PARITY_NONE
 
 #define DATA_SIZE 32+6+2*4+2
+
 typedef struct usart_header
 {
 	uint32_t protocol;
@@ -70,6 +70,31 @@ typedef struct usart_packet
 	uint32_t data[2];
 	uint16_t crc;
 } usart_packet;
+
+struct flags
+{
+	uint32_t flags_usart1_tx : 1;
+	uint32_t flags_usart2_rx : 1;
+	uint32_t flags_usart3_rx : 1;
+	uint32_t flags_uart4_rx : 1;
+	uint32_t flags_uart5_rx : 1;
+	uint32_t flags_usart6_rx : 1;
+	uint32_t flags_uart7_rx : 1;
+	uint32_t flags_uart8_rx : 1;
+	uint32_t flags_uart9_rx : 1;
+};
+
+enum usart_idx
+{
+	IDX_USART2,
+	IDX_USART3,
+	IDX_UART4,
+	IDX_UART5,
+	IDX_USART6,
+	IDX_UART7,
+	IDX_UART8,
+	IDX_UART9
+};
 /* USER CODE END Private defines */
 
 void MX_UART4_Init(void);
@@ -83,7 +108,7 @@ void MX_USART3_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
