@@ -514,6 +514,7 @@ void usart_data_sending(usart_packet *data, uint32_t uid)
 	data->header.dist++;
 	data->crc = crc16(0, data, DATA_SIZE - 2); //all except crc
 	
+	
 	usart_send(data, DATA_SIZE, USART1);
 }
 

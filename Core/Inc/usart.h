@@ -73,15 +73,15 @@ typedef struct usart_packet
 
 struct flags
 {
-	uint32_t flags_usart1_tx : 1;
-	uint32_t flags_usart2_rx : 1;
-	uint32_t flags_usart3_rx : 1;
-	uint32_t flags_uart4_rx : 1;
-	uint32_t flags_uart5_rx : 1;
-	uint32_t flags_usart6_rx : 1;
-	uint32_t flags_uart7_rx : 1;
-	uint32_t flags_uart8_rx : 1;
-	uint32_t flags_uart9_rx : 1;
+	uint32_t usart1_tx : 1;
+	uint32_t usart2_rx : 1;
+	uint32_t usart3_rx : 1;
+	uint32_t uart4_rx : 1;
+	uint32_t uart5_rx : 1;
+	uint32_t usart6_rx : 1;
+	uint32_t uart7_rx : 1;
+	uint32_t uart8_rx : 1;
+	uint32_t uart9_rx : 1;
 };
 
 enum usart_idx
