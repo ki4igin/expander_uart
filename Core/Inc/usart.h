@@ -68,7 +68,7 @@ typedef struct __attribute__((packed)) usart_packet
 {
 	usart_header header;
 	usart_chunk_head chunk_header;
-	float data[];
+	float data[2];
 } usart_packet;
 
 extern usart_packet usart_packets[8];
@@ -117,7 +117,7 @@ enum usart_send_state
 };
 
 uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8], struct flags *flags, uint32_t uid);
-uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
+uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
 void usart_txe_callback(usart_packet *pack, uint16_t crc);
 
 /* USER CODE END Private defines */

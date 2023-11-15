@@ -512,6 +512,9 @@ static uint32_t usart_sending (const void *data, uint32_t sz)
 {
 	static uint32_t cnt = 0;
 	
+	if (sz == 0)
+		return 1;
+	
 	LL_USART_TransmitData8(USART1,*(uint8_t *)(data+cnt));
 	cnt++;
 	
@@ -551,7 +554,7 @@ static void usart_changing_pack(usart_packet *header, uint16_t *crc, uint32_t ui
 	header->header.path[idx] = uid;
 	header->header.dist++;
 	*crc = crc16(0, header, HEADER_SIZE); //all except crc
-	*crc = crc16(0, header->data, header->chunk_header.payload_sz);
+	*crc = crc16(*crc, header->data, header->chunk_header.payload_sz);
 }
 
 static uint32_t usart_flags_rx_processing (struct flags *flags)
@@ -618,6 +621,9 @@ static uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags
 {
 	static uint32_t counter[8] = {0};
 	
+	if (sz == 0) 
+		return 1;
+	
 	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
   {
 		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
@@ -632,7 +638,7 @@ static uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags
 	return 0;
 }
 
-uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
+uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
 {
 	static enum usart_rcv_state usart_rcv_state[8] = {STATE_RCV_HEADER};
 	
@@ -645,7 +651,7 @@ uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32
 			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].chunk_header.payload_sz);
 			break;
 		case STATE_RCV_CRC:
-			usart_rcv_state[idx] -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USARTx, 2);
+			usart_rcv_state[idx] -= 2*usart_receiving((uint8_t *)&crc[idx], idx, flags, USARTx, 2);
 			if (usart_rcv_state[idx] == STATE_RCV_HEADER) 
 			{
 				flags->usart1_tx_start = 1;

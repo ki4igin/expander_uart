@@ -92,6 +92,7 @@ void HardFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
+		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
@@ -122,6 +123,7 @@ void BusFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
     /* USER CODE END W1_BusFault_IRQn 0 */
   }
 }
@@ -137,6 +139,7 @@ void UsageFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
     /* USER CODE END W1_UsageFault_IRQn 0 */
   }
 }
@@ -207,12 +210,12 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-	if(LL_USART_IsActiveFlag_TXE(USART1) && flags.usart1_tx_busy)
+	if(LL_USART_IsActiveFlag_TXE(USART1) && LL_USART_IsEnabledIT_TXE(USART1) && flags.usart1_tx_busy)
 	{
 		usart_txe_callback(&usart_packets[idx], crc[idx]);
 	}
 	
-	if (LL_USART_IsActiveFlag_TC(USART1))
+	if (LL_USART_IsActiveFlag_TC(USART1) && LL_USART_IsEnabledIT_TC(USART1))
 	{
 		LL_USART_ClearFlag_TC(USART1);
 		LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_4);
@@ -231,7 +234,7 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-	flags.usart2_rx = usart_rxne_callback(usart_packets, crc[IDX_USART2], IDX_USART2, &flags, USART2);
+	flags.usart2_rx = usart_rxne_callback(usart_packets, crc, IDX_USART2, &flags, USART2);
 
   /* USER CODE END USART2_IRQn 0 */
   /* USER CODE BEGIN USART2_IRQn 1 */
@@ -245,7 +248,7 @@ void USART2_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-	flags.usart3_rx = usart_rxne_callback(usart_packets, crc[IDX_USART3], IDX_USART3, &flags, USART3);
+	flags.usart3_rx = usart_rxne_callback(usart_packets, crc, IDX_USART3, &flags, USART3);
 
   /* USER CODE END USART3_IRQn 0 */
   /* USER CODE BEGIN USART3_IRQn 1 */
@@ -259,7 +262,7 @@ void USART3_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
-	flags.uart4_rx = usart_rxne_callback(usart_packets, crc[IDX_UART4], IDX_UART4, &flags, UART4);
+	flags.uart4_rx = usart_rxne_callback(usart_packets, crc, IDX_UART4, &flags, UART4);
   /* USER CODE END UART4_IRQn 0 */
   /* USER CODE BEGIN UART4_IRQn 1 */
 
@@ -272,7 +275,7 @@ void UART4_IRQHandler(void)
 void UART5_IRQHandler(void)
 {
   /* USER CODE BEGIN UART5_IRQn 0 */
-	flags.uart5_rx =usart_rxne_callback(usart_packets, crc[IDX_UART5], IDX_UART5, &flags, UART5);
+	flags.uart5_rx =usart_rxne_callback(usart_packets, crc, IDX_UART5, &flags, UART5);
   /* USER CODE END UART5_IRQn 0 */
   /* USER CODE BEGIN UART5_IRQn 1 */
 
@@ -285,7 +288,7 @@ void UART5_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
-	flags.usart6_rx =usart_rxne_callback(usart_packets, crc[IDX_USART6], IDX_USART6, &flags, USART6);
+	flags.usart6_rx =usart_rxne_callback(usart_packets, crc, IDX_USART6, &flags, USART6);
   /* USER CODE END USART6_IRQn 0 */
   /* USER CODE BEGIN USART6_IRQn 1 */
 
@@ -298,7 +301,7 @@ void USART6_IRQHandler(void)
 void UART7_IRQHandler(void)
 {
   /* USER CODE BEGIN UART7_IRQn 0 */
-	flags.uart7_rx =usart_rxne_callback(usart_packets, crc[IDX_UART7], IDX_UART7, &flags, UART7);
+	flags.uart7_rx =usart_rxne_callback(usart_packets, crc, IDX_UART7, &flags, UART7);
   /* USER CODE END UART7_IRQn 0 */
   /* USER CODE BEGIN UART7_IRQn 1 */
 
@@ -311,7 +314,7 @@ void UART7_IRQHandler(void)
 void UART8_IRQHandler(void)
 {
   /* USER CODE BEGIN UART8_IRQn 0 */
-	flags.uart8_rx =usart_rxne_callback(usart_packets, crc[IDX_UART8], IDX_UART8, &flags, UART8);
+	flags.uart8_rx =usart_rxne_callback(usart_packets, crc, IDX_UART8, &flags, UART8);
   /* USER CODE END UART8_IRQn 0 */
   /* USER CODE BEGIN UART8_IRQn 1 */
 
@@ -324,7 +327,7 @@ void UART8_IRQHandler(void)
 void UART9_IRQHandler(void)
 {
   /* USER CODE BEGIN UART9_IRQn 0 */
-	flags.uart9_rx =usart_rxne_callback(usart_packets, crc[IDX_UART9], IDX_UART9, &flags, UART9);
+	flags.uart9_rx =usart_rxne_callback(usart_packets, crc, IDX_UART9, &flags, UART9);
   /* USER CODE END UART9_IRQn 0 */
   /* USER CODE BEGIN UART9_IRQn 1 */
 
