@@ -3619,9 +3619,9 @@
       <ActiveTab>0</ActiveTab>
       <Doc>
         <Name>../Core/Src/usart.c</Name>
-        <ColumnNumber>54</ColumnNumber>
-        <TopLine>522</TopLine>
-        <CurrentLine>611</CurrentLine>
+        <ColumnNumber>26</ColumnNumber>
+        <TopLine>564</TopLine>
+        <CurrentLine>640</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders>548,557</ContractedFolders>
         <PaneID>0</PaneID>

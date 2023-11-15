@@ -634,19 +634,19 @@ static uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags
 
 uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
 {
-	static enum usart_rcv_state usart_rcv_state = STATE_RCV_HEADER;
+	static enum usart_rcv_state usart_rcv_state[8] = {STATE_RCV_HEADER};
 	
-	switch (usart_rcv_state){
+	switch (usart_rcv_state[idx]){
 		case STATE_RCV_HEADER:
-			usart_rcv_state += usart_receiving((uint8_t *)&usart_packets[idx], idx, flags, USARTx, HEADER_SIZE);
+			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx], idx, flags, USARTx, HEADER_SIZE);
 			break;
 		case STATE_RCV_DATA:
 			flags->whoami = usart_packets[idx].header.flags&0x4;
-			usart_rcv_state += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].chunk_header.payload_sz);
+			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].chunk_header.payload_sz);
 			break;
 		case STATE_RCV_CRC:
-			usart_rcv_state -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USARTx, 2);
-			if (usart_rcv_state == STATE_RCV_HEADER) 
+			usart_rcv_state[idx] -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USARTx, 2);
+			if (usart_rcv_state[idx] == STATE_RCV_HEADER) 
 			{
 				flags->usart1_tx_start = 1;
 				return 1;
