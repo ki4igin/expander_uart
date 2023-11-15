@@ -42,7 +42,8 @@ extern "C" {
 #define SLAVE_STOPBITS LL_USART_STOPBITS_1
 #define SLAVE_PARITY LL_USART_PARITY_NONE
 
-#define DATA_SIZE 32+6+2*4+2
+#define HEADER_SIZE 32+6
+#define DATA_SIZE 2
 
 typedef struct usart_header
 {
@@ -67,9 +68,9 @@ typedef struct __attribute__((packed)) usart_packet
 {
 	usart_header header;
 	usart_chunk_head chunk_header;
-	float data[2];
-	uint16_t crc;
+	float data[];
 } usart_packet;
+
 extern usart_packet usart_packets[8];
 
 extern struct flags
@@ -84,6 +85,7 @@ extern struct flags
 	uint32_t uart7_rx : 1;
 	uint32_t uart8_rx : 1;
 	uint32_t uart9_rx : 1;
+	uint32_t whoami : 1;
 } flags;
 
 enum usart_idx
@@ -98,8 +100,15 @@ enum usart_idx
 	IDX_UART9
 };
 
+enum usart_rcv_state
+{
+	STATE_RCV_HEADER = 0,
+	STATE_RCV_DATA,
+	STATE_RCV_CRC,
+};
+
 uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
-uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx);
+void usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
 void usart_txe_callback(const void *data);
 
 /* USER CODE END Private defines */

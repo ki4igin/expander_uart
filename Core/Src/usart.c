@@ -523,22 +523,43 @@ static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 	} while (len--);
 }
 
-void usart_changing_pack(usart_packet *data, uint32_t uid)
+void usart_changing_pack(usart_packet *header, uint32_t *data, uint16_t *crc, uint32_t uid)
 {
-	uint32_t idx = data->header.dist & 0x3;
-	data->header.path[idx] = uid;
-	data->header.dist++;
-	data->crc = crc16(0, data, DATA_SIZE - 2); //all except crc
+	uint32_t idx = header->header.dist & 0x3;
+	header->header.path[idx] = uid;
+	header->header.dist++;
+	*crc = crc16(0, header, HEADER_SIZE); //all except crc
+	*crc = crc16(0, data, header->chunk_header.payload_sz);
 }
 
-uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx)
+uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx, uint32_t sz)
 {
 	static uint32_t counter[8] = {0};
+	
 	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
   {
 		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
 		counter[idx]++;
-		if (counter[idx] > DATA_SIZE - 1)
+		
+		if (counter[idx] > sz - 1)
+		{
+			counter[idx] = 0;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
+{
+	static uint32_t counter[8] = {0};
+	
+	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
+  {
+		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
+		counter[idx]++;
+		
+		if (counter[idx] > HEADER_SIZE - 1)
 		{
 			counter[idx] = 0;
 			return 1;
@@ -599,11 +620,29 @@ uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *f
 	uint32_t idx = usart_flags_rx_processing(flags);
 	if (idx < IDX_UART9+1)
 	{
-		usart_changing_pack(&usart_packets[idx], uid);
+		//usart_changing_pack(&usart_packets[idx], uid);
 		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_4);
 		usart_txe_callback(&usart_packets[idx]);
 	}
 	return idx;
+}
+
+void usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
+{
+	static enum usart_rcv_state usart_rcv_state = STATE_RCV_HEADER;
+	
+	switch (usart_rcv_state){
+		case STATE_RCV_HEADER:
+			usart_rcv_state += usart_receiving((uint8_t *)&usart_packets[idx], idx, flags, USARTx, HEADER_SIZE);
+			break;
+		case STATE_RCV_DATA:
+			flags->whoami = usart_packets[idx].header.flags&0x4;
+			usart_rcv_state += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].chunk_header.payload_sz);
+			break;
+		case STATE_RCV_CRC:
+			usart_rcv_state -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USARTx, 2);
+			break;
+	}
 }
 
 
