@@ -321,9 +321,7 @@ void MX_USART1_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART1);
   LL_USART_Enable(USART1);
   /* USER CODE BEGIN USART1_Init 2 */
-	LL_USART_EnableIT_TXE(USART1);
-	LL_USART_EnableIT_TC(USART1);
-  LL_USART_EnableIT_ERROR(USART1);
+	
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -501,16 +499,18 @@ static void usart_send (const void *s, uint32_t len, USART_TypeDef *USARTx)
 	} while(len--);
 }
 
-void usart_txe_callback(usart_packet *data)
+void usart_txe_callback(const void *data)
 {
 	static uint32_t cnt = 0;
 	if (cnt > DATA_SIZE - 1) 
 	{
+		LL_USART_DisableIT_TXE(USART1);
+		LL_USART_EnableIT_TC(USART1);
 		cnt = 0;
 	}
 	else
 	{
-		LL_USART_TransmitData8(USART1,*(uint8_t *)data++);
+		LL_USART_TransmitData8(USART1,*(uint8_t *)(data+cnt));
 		cnt++;
 	}
 }
@@ -549,7 +549,7 @@ uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx
 
 uint32_t usart_flags_rx_processing (struct flags *flags)
 {
-	uint32_t idx = 0;
+	uint32_t idx = 100;
 	
 	if (flags->usart2_rx)
 	{
@@ -594,16 +594,16 @@ uint32_t usart_flags_rx_processing (struct flags *flags)
 	return idx;
 }
 
-void usart_data_processing(usart_packet usart_packets[8], struct flags *flags, uint32_t uid)
+uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid)
 {
-	uint32_t idx = 0;
-	if (!flags->usart1_tx) 
+	uint32_t idx = usart_flags_rx_processing(flags);
+	if (idx < IDX_UART9+1)
 	{
-		usart_flags_rx_processing(flags);
 		usart_changing_pack(&usart_packets[idx], uid);
+		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_4);
+		usart_txe_callback(&usart_packets[idx]);
 	}
-	usart_txe_callback(&usart_packets[idx]);
-	flags->usart1_tx = 1;
+	return idx;
 }
 
 

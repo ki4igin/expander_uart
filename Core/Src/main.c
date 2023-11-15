@@ -47,6 +47,7 @@
 
 /* USER CODE BEGIN PV */
 uint32_t uid = 0;
+uint32_t idx = 100;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,7 +116,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+		if(!(flags.usart1_tx_busy) && (flags.usart1_tx_start))
+		{
+			flags.usart1_tx_busy = 1;
+			flags.usart1_tx_start = 0;
+			idx = usart_start_transmission(usart_packets, &flags, uid);
+			LL_USART_EnableIT_TXE(USART1);
+		}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

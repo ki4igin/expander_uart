@@ -56,24 +56,26 @@ typedef struct usart_header
 } usart_header;
 
 // should be sent before sending data
-typedef struct usart_chunk_head
+typedef struct __attribute__((packed)) usart_chunk_head
 {
 	uint32_t id: 16;
 	uint32_t type: 16;
 	uint16_t payload_sz;
 } usart_chunk_head;
 
-typedef struct usart_packet
+typedef struct __attribute__((packed)) usart_packet
 {
 	usart_header header;
 	usart_chunk_head chunk_header;
-	uint32_t data[2];
+	float data[2];
 	uint16_t crc;
 } usart_packet;
+extern usart_packet usart_packets[8];
 
-struct flags
+extern struct flags
 {
-	uint32_t usart1_tx : 1;
+	uint32_t usart1_tx_busy : 1;
+	uint32_t usart1_tx_start : 1;
 	uint32_t usart2_rx : 1;
 	uint32_t usart3_rx : 1;
 	uint32_t uart4_rx : 1;
@@ -82,7 +84,7 @@ struct flags
 	uint32_t uart7_rx : 1;
 	uint32_t uart8_rx : 1;
 	uint32_t uart9_rx : 1;
-};
+} flags;
 
 enum usart_idx
 {
@@ -95,6 +97,11 @@ enum usart_idx
 	IDX_UART8,
 	IDX_UART9
 };
+
+uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
+uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx);
+void usart_txe_callback(const void *data);
+
 /* USER CODE END Private defines */
 
 void MX_UART4_Init(void);
@@ -108,8 +115,7 @@ void MX_USART3_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx);
-void usart_data_processing(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
