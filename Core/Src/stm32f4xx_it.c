@@ -43,7 +43,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 usart_packet usart_packets[8] = {0};
-uint32_t crc[8] = {0};
+uint16_t crc[8] = {0};
 struct flags flags = {0};
 /* USER CODE END PV */
 
@@ -209,7 +209,7 @@ void USART1_IRQHandler(void)
   /* USER CODE BEGIN USART1_IRQn 0 */
 	if(LL_USART_IsActiveFlag_TXE(USART1) && flags.usart1_tx_busy)
 	{
-		usart_txe_callback(&usart_packets[idx]);
+		usart_txe_callback(&usart_packets[idx], crc[idx]);
 	}
 	
 	if (LL_USART_IsActiveFlag_TC(USART1))

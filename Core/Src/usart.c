@@ -499,22 +499,6 @@ static void usart_send (const void *s, uint32_t len, USART_TypeDef *USARTx)
 	} while(len--);
 }
 
-void usart_txe_callback(const void *data)
-{
-	static uint32_t cnt = 0;
-	if (cnt > DATA_SIZE - 1) 
-	{
-		LL_USART_DisableIT_TXE(USART1);
-		LL_USART_EnableIT_TC(USART1);
-		cnt = 0;
-	}
-	else
-	{
-		LL_USART_TransmitData8(USART1,*(uint8_t *)(data+cnt));
-		cnt++;
-	}
-}
-
 static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 {
 	do
@@ -523,52 +507,54 @@ static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 	} while (len--);
 }
 
-void usart_changing_pack(usart_packet *header, uint32_t *data, uint16_t *crc, uint32_t uid)
+/** TXE FUNCTIONS **/
+static uint32_t usart_sending (const void *data, uint32_t sz)
+{
+	static uint32_t cnt = 0;
+	
+	LL_USART_TransmitData8(USART1,*(uint8_t *)(data+cnt));
+	cnt++;
+	
+	if (cnt > sz - 1) {
+		cnt = 0;
+		return 1;
+	}
+	
+	return 0;
+}
+
+void usart_txe_callback(usart_packet *pack, uint16_t crc)
+{
+	static enum usart_send_state usart_send_state = STATE_SEND_HEADER;
+	
+	switch(usart_send_state)
+	{
+		case STATE_SEND_HEADER:
+			usart_send_state += usart_sending(pack, HEADER_SIZE);
+			break;
+		case STATE_SEND_DATA:
+			usart_send_state += usart_sending(pack->data, pack->chunk_header.payload_sz);
+			break;
+		case STATE_SEND_CRC:
+			usart_send_state += usart_sending(&crc, 2);
+			break;
+		case STATE_END:
+			LL_USART_DisableIT_TXE(USART1);
+			LL_USART_EnableIT_TC(USART1);
+			usart_send_state = 	STATE_SEND_HEADER;
+			break;
+	}
+}
+static void usart_changing_pack(usart_packet *header, uint16_t *crc, uint32_t uid)
 {
 	uint32_t idx = header->header.dist & 0x3;
 	header->header.path[idx] = uid;
 	header->header.dist++;
 	*crc = crc16(0, header, HEADER_SIZE); //all except crc
-	*crc = crc16(0, data, header->chunk_header.payload_sz);
+	*crc = crc16(0, header->data, header->chunk_header.payload_sz);
 }
 
-uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx, uint32_t sz)
-{
-	static uint32_t counter[8] = {0};
-	
-	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
-  {
-		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
-		counter[idx]++;
-		
-		if (counter[idx] > sz - 1)
-		{
-			counter[idx] = 0;
-			return 1;
-		}
-	}
-	return 0;
-}
-
-uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
-{
-	static uint32_t counter[8] = {0};
-	
-	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
-  {
-		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
-		counter[idx]++;
-		
-		if (counter[idx] > HEADER_SIZE - 1)
-		{
-			counter[idx] = 0;
-			return 1;
-		}
-	}
-	return 0;
-}
-
-uint32_t usart_flags_rx_processing (struct flags *flags)
+static uint32_t usart_flags_rx_processing (struct flags *flags)
 {
 	uint32_t idx = 100;
 	
@@ -615,16 +601,35 @@ uint32_t usart_flags_rx_processing (struct flags *flags)
 	return idx;
 }
 
-uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid)
+uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8], struct flags *flags, uint32_t uid)
 {
 	uint32_t idx = usart_flags_rx_processing(flags);
 	if (idx < IDX_UART9+1)
 	{
-		//usart_changing_pack(&usart_packets[idx], uid);
+		usart_changing_pack(&usart_packets[idx], &crc[idx], uid);
 		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_4);
-		usart_txe_callback(&usart_packets[idx]);
+		usart_txe_callback(&usart_packets[idx], crc[idx]);
 	}
 	return idx;
+}
+
+/** RXNE FUNCTIONS **/
+static uint32_t usart_receiving(uint8_t *data, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx, uint32_t sz)
+{
+	static uint32_t counter[8] = {0};
+	
+	if(LL_USART_IsActiveFlag_RXNE(USARTx) && LL_USART_IsEnabledIT_RXNE(USARTx))
+  {
+		*(data + counter[idx]) = LL_USART_ReceiveData8(USARTx);
+		counter[idx]++;
+		
+		if (counter[idx] > sz - 1)
+		{
+			counter[idx] = 0;
+			return 1;
+		}
+	}
+	return 0;
 }
 
 uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)

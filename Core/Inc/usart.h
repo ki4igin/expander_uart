@@ -72,6 +72,7 @@ typedef struct __attribute__((packed)) usart_packet
 } usart_packet;
 
 extern usart_packet usart_packets[8];
+extern uint16_t crc[8];
 
 extern struct flags
 {
@@ -107,9 +108,17 @@ enum usart_rcv_state
 	STATE_RCV_CRC,
 };
 
-uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
+enum usart_send_state
+{
+	STATE_SEND_HEADER = 0,
+	STATE_SEND_DATA,
+	STATE_SEND_CRC,
+	STATE_END,
+};
+
+uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8], struct flags *flags, uint32_t uid);
 uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
-void usart_txe_callback(const void *data);
+void usart_txe_callback(usart_packet *pack, uint16_t crc);
 
 /* USER CODE END Private defines */
 

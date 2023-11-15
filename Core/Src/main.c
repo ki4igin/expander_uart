@@ -120,7 +120,7 @@ int main(void)
 		{
 			flags.usart1_tx_busy = 1;
 			flags.usart1_tx_start = 0;
-			idx = usart_start_transmission(usart_packets, &flags, uid);
+			idx = usart_start_transmission(usart_packets, crc, &flags, uid);
 			LL_USART_EnableIT_TXE(USART1);
 		}
     /* USER CODE BEGIN 3 */
