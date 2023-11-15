@@ -70,7 +70,7 @@ void MX_UART4_Init(void)
   LL_USART_ConfigAsyncMode(UART4);
   LL_USART_Enable(UART4);
   /* USER CODE BEGIN UART4_Init 2 */
-
+	LL_USART_EnableIT_RXNE(UART4);
   /* USER CODE END UART4_Init 2 */
 
 }
@@ -120,7 +120,7 @@ void MX_UART5_Init(void)
   LL_USART_ConfigAsyncMode(UART5);
   LL_USART_Enable(UART5);
   /* USER CODE BEGIN UART5_Init 2 */
-
+	LL_USART_EnableIT_RXNE(UART5);
   /* USER CODE END UART5_Init 2 */
 
 }
@@ -170,7 +170,7 @@ void MX_UART7_Init(void)
   LL_USART_ConfigAsyncMode(UART7);
   LL_USART_Enable(UART7);
   /* USER CODE BEGIN UART7_Init 2 */
-
+	LL_USART_EnableIT_RXNE(UART7);
   /* USER CODE END UART7_Init 2 */
 
 }
@@ -220,7 +220,7 @@ void MX_UART8_Init(void)
   LL_USART_ConfigAsyncMode(UART8);
   LL_USART_Enable(UART8);
   /* USER CODE BEGIN UART8_Init 2 */
-
+	LL_USART_EnableIT_RXNE(UART8);
   /* USER CODE END UART8_Init 2 */
 
 }
@@ -270,7 +270,7 @@ void MX_UART9_Init(void)
   LL_USART_ConfigAsyncMode(UART9);
   LL_USART_Enable(UART9);
   /* USER CODE BEGIN UART9_Init 2 */
-
+	LL_USART_EnableIT_RXNE(UART9);
   /* USER CODE END UART9_Init 2 */
 
 }
@@ -321,7 +321,9 @@ void MX_USART1_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART1);
   LL_USART_Enable(USART1);
   /* USER CODE BEGIN USART1_Init 2 */
-
+	LL_USART_EnableIT_TXE(USART1);
+	LL_USART_EnableIT_TC(USART1);
+  LL_USART_EnableIT_ERROR(USART1);
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -372,7 +374,7 @@ void MX_USART2_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART2);
   LL_USART_Enable(USART2);
   /* USER CODE BEGIN USART2_Init 2 */
-
+	LL_USART_EnableIT_RXNE(USART2);
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -432,7 +434,7 @@ void MX_USART3_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART3);
   LL_USART_Enable(USART3);
   /* USER CODE BEGIN USART3_Init 2 */
-
+	LL_USART_EnableIT_RXNE(USART3);
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -483,7 +485,7 @@ void MX_USART6_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART6);
   LL_USART_Enable(USART6);
   /* USER CODE BEGIN USART6_Init 2 */
-
+	LL_USART_EnableIT_RXNE(USART6);
   /* USER CODE END USART6_Init 2 */
 
 }

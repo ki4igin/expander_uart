@@ -219,7 +219,7 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-	flags.flags_usart2_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART2], IDX_USART2, USART2);
+	flags.usart2_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART2], IDX_USART2, USART2);
 
   /* USER CODE END USART2_IRQn 0 */
   /* USER CODE BEGIN USART2_IRQn 1 */
@@ -233,7 +233,7 @@ void USART2_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-	flags.flags_usart3_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART3], IDX_USART3, USART3);
+	flags.usart3_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART3], IDX_USART3, USART3);
   /* USER CODE END USART3_IRQn 0 */
   /* USER CODE BEGIN USART3_IRQn 1 */
 
@@ -246,7 +246,7 @@ void USART3_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
-	flags.flags_uart4_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART4], IDX_UART4, UART4);
+	flags.uart4_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART4], IDX_UART4, UART4);
   /* USER CODE END UART4_IRQn 0 */
   /* USER CODE BEGIN UART4_IRQn 1 */
 
@@ -259,7 +259,7 @@ void UART4_IRQHandler(void)
 void UART5_IRQHandler(void)
 {
   /* USER CODE BEGIN UART5_IRQn 0 */
-	flags.flags_uart5_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART5], IDX_UART5, UART5);
+	flags.uart5_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART5], IDX_UART5, UART5);
   /* USER CODE END UART5_IRQn 0 */
   /* USER CODE BEGIN UART5_IRQn 1 */
 
@@ -272,7 +272,7 @@ void UART5_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
-	flags.flags_usart6_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART6], IDX_USART6, USART6);
+	flags.usart6_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_USART6], IDX_USART6, USART6);
   /* USER CODE END USART6_IRQn 0 */
   /* USER CODE BEGIN USART6_IRQn 1 */
 
@@ -285,7 +285,7 @@ void USART6_IRQHandler(void)
 void UART7_IRQHandler(void)
 {
   /* USER CODE BEGIN UART7_IRQn 0 */
-	flags.flags_uart7_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART7], IDX_UART7, UART7);
+	flags.uart7_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART7], IDX_UART7, UART7);
   /* USER CODE END UART7_IRQn 0 */
   /* USER CODE BEGIN UART7_IRQn 1 */
 
@@ -298,7 +298,7 @@ void UART7_IRQHandler(void)
 void UART8_IRQHandler(void)
 {
   /* USER CODE BEGIN UART8_IRQn 0 */
-	flags.flags_uart8_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART8], IDX_UART8, UART8);
+	flags.uart8_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART8], IDX_UART8, UART8);
   /* USER CODE END UART8_IRQn 0 */
   /* USER CODE BEGIN UART8_IRQn 1 */
 
@@ -311,7 +311,7 @@ void UART8_IRQHandler(void)
 void UART9_IRQHandler(void)
 {
   /* USER CODE BEGIN UART9_IRQn 0 */
-	flags.flags_uart9_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART9], IDX_UART9, UART9);
+	flags.uart9_rx = usart_data_receiving((uint8_t *)&usart_packets[IDX_UART9], IDX_UART9, UART9);
   /* USER CODE END UART9_IRQn 0 */
   /* USER CODE BEGIN UART9_IRQn 1 */
 
