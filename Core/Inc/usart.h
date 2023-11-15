@@ -109,6 +109,7 @@ void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx);
+void usart_data_processing(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

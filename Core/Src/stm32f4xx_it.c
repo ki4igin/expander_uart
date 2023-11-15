@@ -206,7 +206,16 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	if(LL_USART_IsActiveFlag_TXE(USART1))
+	{
+		usart_data_processing(usart_packets,&flags,uid);
+	}
 	
+	if (LL_USART_IsActiveFlag_TC(USART1))
+	{
+		LL_USART_ClearFlag_TC(USART1);
+		flags.usart1_tx = 1;
+	}
   /* USER CODE END USART1_IRQn 0 */
   /* USER CODE BEGIN USART1_IRQn 1 */
 

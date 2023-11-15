@@ -500,7 +500,21 @@ static void usart_send (const void *s, uint32_t len, USART_TypeDef *USARTx)
 		LL_USART_TransmitData8(USARTx, (*(uint8_t *)s++));
 	} while(len--);
 }
-	
+
+void usart_txe_callback(usart_packet *data)
+{
+	static uint32_t cnt = 0;
+	if (cnt > DATA_SIZE - 1) 
+	{
+		cnt = 0;
+	}
+	else
+	{
+		LL_USART_TransmitData8(USART1,*(uint8_t *)data++);
+		cnt++;
+	}
+}
+
 static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 {
 	do
@@ -509,15 +523,12 @@ static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 	} while (len--);
 }
 
-void usart_data_sending(usart_packet *data, uint32_t uid)
+void usart_changing_pack(usart_packet *data, uint32_t uid)
 {
 	uint32_t idx = data->header.dist & 0x3;
 	data->header.path[idx] = uid;
 	data->header.dist++;
 	data->crc = crc16(0, data, DATA_SIZE - 2); //all except crc
-	
-	
-	usart_send(data, DATA_SIZE, USART1);
 }
 
 uint32_t usart_data_receiving(uint8_t *data, uint32_t idx, USART_TypeDef *USARTx)
@@ -589,8 +600,10 @@ void usart_data_processing(usart_packet usart_packets[8], struct flags *flags, u
 	if (!flags->usart1_tx) 
 	{
 		usart_flags_rx_processing(flags);
-		usart_data_sending(&usart_packets[idx], uid);
+		usart_changing_pack(&usart_packets[idx], uid);
 	}
+	usart_txe_callback(&usart_packets[idx]);
+	flags->usart1_tx = 1;
 }
 
 

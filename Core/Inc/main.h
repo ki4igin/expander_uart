@@ -65,7 +65,7 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+extern uint32_t uid;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
