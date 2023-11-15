@@ -108,7 +108,7 @@ enum usart_rcv_state
 };
 
 uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *flags, uint32_t uid);
-void usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
+uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
 void usart_txe_callback(const void *data);
 
 /* USER CODE END Private defines */

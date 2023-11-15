@@ -627,7 +627,7 @@ uint32_t usart_start_transmission(usart_packet usart_packets[8], struct flags *f
 	return idx;
 }
 
-void usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
+uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t idx, struct flags *flags, USART_TypeDef *USARTx)
 {
 	static enum usart_rcv_state usart_rcv_state = STATE_RCV_HEADER;
 	
@@ -641,8 +641,15 @@ void usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc, uint32_t i
 			break;
 		case STATE_RCV_CRC:
 			usart_rcv_state -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USARTx, 2);
+			if (usart_rcv_state == STATE_RCV_HEADER) 
+			{
+				flags->usart1_tx_start = 1;
+				return 1;
+			}
 			break;
 	}
+	
+	return 0;
 }
 
 
