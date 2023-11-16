@@ -652,7 +652,7 @@ uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uin
 			break;
 		case STATE_RCV_CRC:
 			usart_rcv_state[idx] -= 2*usart_receiving((uint8_t *)&crc[idx], idx, flags, USARTx, 2);
-			if (usart_rcv_state[idx] == STATE_RCV_HEADER) 
+			if (usart_rcv_state[idx] == STATE_RCV_HEADER && crc[idx] == crc16(0, &usart_packets[idx],HEADER_SIZE+usart_packets[idx].chunk_header.payload_sz))
 			{
 				flags->usart1_tx_start = 1;
 				return 1;

@@ -154,7 +154,7 @@
           <Type>0</Type>
           <LineNumber>613</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228170</Address>
+          <Address>134228258</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -168,18 +168,50 @@
         <Bp>
           <Number>1</Number>
           <Type>0</Type>
-          <LineNumber>221</LineNumber>
+          <LineNumber>121</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134226334</Address>
+          <Address>134227236</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>../Core/Src/stm32f4xx_it.c</Filename>
+          <Filename>../Core/Src/main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\expander_uart\../Core/Src/stm32f4xx_it.c\221</Expression>
+          <Expression>\\expander_uart\../Core/Src/main.c\121</Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
+          <LineNumber>566</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134227454</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>../Core/Src/usart.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\expander_uart\../Core/Src/usart.c\566</Expression>
+        </Bp>
+        <Bp>
+          <Number>3</Number>
+          <Type>0</Type>
+          <LineNumber>659</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134228078</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>../Core/Src/usart.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\expander_uart\../Core/Src/usart.c\659</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -217,6 +249,11 @@
           <count>6</count>
           <WinNumber>1</WinNumber>
           <ItemText>crc</ItemText>
+        </Ww>
+        <Ww>
+          <count>7</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>idx</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
