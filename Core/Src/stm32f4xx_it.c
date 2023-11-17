@@ -44,6 +44,9 @@
 /* USER CODE BEGIN PV */
 usart_packet usart_packets[8] = {0};
 uint16_t crc[8] = {0};
+
+usart_packet usart1_packet = {0};
+uint16_t usart1_crc = 0;
 struct flags flags = {0};
 /* USER CODE END PV */
 
@@ -210,6 +213,7 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+	/**TRANSMISSION**/
 	if(LL_USART_IsActiveFlag_TXE(USART1) && LL_USART_IsEnabledIT_TXE(USART1) && flags.usart1_tx_busy)
 	{
 		usart_txe_callback(&usart_packets[idx], crc[idx]);
@@ -224,7 +228,8 @@ void USART1_IRQHandler(void)
 	}
   /* USER CODE END USART1_IRQn 0 */
   /* USER CODE BEGIN USART1_IRQn 1 */
-
+	/**RECEPTION**/
+	flags.usart1_rx_end = usart1_rxne_callback(&usart1_packet, usart1_crc, &flags);
   /* USER CODE END USART1_IRQn 1 */
 }
 

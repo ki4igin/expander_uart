@@ -32,52 +32,89 @@ extern "C" {
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
-#define MASTER_BAUD 115200
-#define MASTER_DATAWIDTH LL_USART_DATAWIDTH_8B
-#define MASTER_STOPBITS LL_USART_STOPBITS_1
-#define MASTER_PARITY LL_USART_PARITY_NONE
+#define HEADER_SIZE 16+4
+#define DATA_MAX_SIZE 2
 
-#define SLAVE_BAUD 115200
-#define SLAVE_DATAWIDTH LL_USART_DATAWIDTH_8B
-#define SLAVE_STOPBITS LL_USART_STOPBITS_1
-#define SLAVE_PARITY LL_USART_PARITY_NONE
+#define PC_ID 0x00000000
+#define PROTOCOL_AURA 0x41525541
+#define ID_FCN_EXPANDER 8
 
-#define HEADER_SIZE 32+6
-#define DATA_SIZE 2
+#define GPIO_RDE GPIOC
+#define USART1_RDE_PIN LL_GPIO_PIN_4
+
+#define USART2_RDE_PIN LL_GPIO_PIN_5
+#define USART3_RDE_PIN LL_GPIO_PIN_6
+#define UART4_RDE_PIN LL_GPIO_PIN_7
+#define UART5_RDE_PIN LL_GPIO_PIN_8
+#define USART6_RDE_PIN LL_GPIO_PIN_9
+#define UART7_RDE_PIN LL_GPIO_PIN_10
+#define UART8_RDE_PIN LL_GPIO_PIN_11
+#define UART9_RDE_PIN LL_GPIO_PIN_12
 
 typedef struct usart_header
 {
 	uint32_t protocol;
-	uint32_t cnt : 16;
-	uint32_t dist : 8;
-	uint32_t flags : 8;
+	uint32_t cnt;
 	uint32_t src;
 	uint32_t dest;
-	uint32_t path[4];
 } usart_header;
 
-// should be sent before sending data
-typedef struct __attribute__((packed)) usart_chunk_head
+enum data_type
 {
-	uint32_t id: 16;
-	uint32_t type: 16;
-	uint16_t payload_sz;
+	DATA_TYPE_CHAR = 1,
+	DATA_TYPE_UCHAR,
+	DATA_TYPE_SHORT,
+	DATA_TYPE_USHORT,
+	DATA_TYPE_INT,
+	DATA_TYPE_UINT,
+	DATA_TYPE_FLOAT,
+	DATA_TYPE_DOUBLE,
+	DATA_TYPE_STRING
+};
+enum fcn_id
+{
+	FCN_ID_WHOAMI = 0,
+	FCN_ID_DATA
+};
+
+// should be sent before sending data
+typedef struct
+{
+	uint32_t id: 8;
+	uint32_t type: 8;
+	uint32_t payload_sz : 16;
 } usart_chunk_head;
 
-typedef struct __attribute__((packed)) usart_packet
+typedef struct
 {
 	usart_header header;
 	usart_chunk_head chunk_header;
-	float data[2];
+} usart_data_header;
+
+typedef struct 
+{
+	uint32_t sensor_type;
+	uint32_t path[4];
+} whoami_pack;
+
+typedef struct
+{
+	usart_data_header hdr;
+	whoami_pack whoami;
+	uint8_t data[];
 } usart_packet;
 
 extern usart_packet usart_packets[8];
 extern uint16_t crc[8];
 
+extern usart_packet usart1_packet;
+extern uint16_t usart1_crc;
+
 extern struct flags
 {
 	uint32_t usart1_tx_busy : 1;
 	uint32_t usart1_tx_start : 1;
+	uint32_t usart1_rx_end : 1;
 	uint32_t usart2_rx : 1;
 	uint32_t usart3_rx : 1;
 	uint32_t uart4_rx : 1;
@@ -118,6 +155,8 @@ enum usart_send_state
 
 uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8], struct flags *flags, uint32_t uid);
 uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
+
+uint32_t usart1_rxne_callback(usart_packet *usart_packet, uint16_t crc, struct flags *flags);
 void usart_txe_callback(usart_packet *pack, uint16_t crc);
 
 /* USER CODE END Private defines */

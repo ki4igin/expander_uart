@@ -118,10 +118,27 @@ int main(void)
     /* USER CODE END WHILE */
 		if(!(flags.usart1_tx_busy) && (flags.usart1_tx_start))
 		{
-			flags.usart1_tx_busy = 1;
-			flags.usart1_tx_start = 0;
-			idx = usart_start_transmission(usart_packets, crc, &flags, uid);
-			LL_USART_EnableIT_TXE(USART1);
+			if(flags.whoami)
+			{
+				usart1_packet.hdr.chunk_header.id = ID_FCN_EXPANDER;
+				usart1_packet.hdr.chunk_header.type = DATA_TYPE_UINT;
+				usart1_packet.hdr.chunk_header.payload_sz = 20;
+				usart1_packet.whoami.sensor_type = uid;
+				
+				usart1_crc = crc16(0xFFFF, &usart1_packet.hdr, HEADER_SIZE);
+				usart1_crc = crc16(usart1_crc, &usart1_packet.whoami, usart1_packet.hdr.chunk_header.payload_sz);
+				
+				LL_GPIO_SetOutputPin(GPIO_RDE, USART1_RDE_PIN|USART2_RDE_PIN|USART3_RDE_PIN|UART4_RDE_PIN|UART5_RDE_PIN|USART6_RDE_PIN|UART7_RDE_PIN|UART8_RDE_PIN|UART9_RDE_PIN);
+				usart_txe_callback(&usart1_packet, usart1_crc);
+				
+			}
+			else
+			{
+				flags.usart1_tx_busy = 1;
+				flags.usart1_tx_start = 0;
+				idx = usart_start_transmission(usart_packets, crc, &flags, uid);
+				LL_USART_EnableIT_TXE(USART1);
+			}
 		}
     /* USER CODE BEGIN 3 */
   }

@@ -321,7 +321,7 @@ void MX_USART1_UART_Init(void)
   LL_USART_ConfigAsyncMode(USART1);
   LL_USART_Enable(USART1);
   /* USER CODE BEGIN USART1_Init 2 */
-	
+	LL_USART_EnableIT_RXNE(USART1);
   /* USER CODE END USART1_Init 2 */
 
 }
@@ -536,7 +536,8 @@ void usart_txe_callback(usart_packet *pack, uint16_t crc)
 			usart_send_state += usart_sending(pack, HEADER_SIZE);
 			break;
 		case STATE_SEND_DATA:
-			usart_send_state += usart_sending(pack->data, pack->chunk_header.payload_sz);
+			if(flags.whoami) usart_send_state += usart_sending(&pack->whoami, pack->hdr.chunk_header.payload_sz);
+			else usart_send_state += usart_sending(pack->data, pack->hdr.chunk_header.payload_sz);
 			break;
 		case STATE_SEND_CRC:
 			usart_send_state += usart_sending(&crc, 2);
@@ -548,13 +549,12 @@ void usart_txe_callback(usart_packet *pack, uint16_t crc)
 			break;
 	}
 }
-static void usart_changing_pack(usart_packet *header, uint16_t *crc, uint32_t uid)
+static void usart_changing_pack(usart_packet *pack, uint16_t *crc, uint32_t uid)
 {
-	uint32_t idx = header->header.dist & 0x3;
-	header->header.path[idx] = uid;
-	header->header.dist++;
-	*crc = crc16(0, header, HEADER_SIZE); //all except crc
-	*crc = crc16(*crc, header->data, header->chunk_header.payload_sz);
+	//TODO
+	//pack->whoami.path[]
+	*crc = crc16(0xFFFF, pack, HEADER_SIZE); //all except crc
+	*crc = crc16(*crc, pack->data, pack->hdr.chunk_header.payload_sz);
 }
 
 static uint32_t usart_flags_rx_processing (struct flags *flags)
@@ -610,7 +610,7 @@ uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8]
 	if (idx < IDX_UART9+1)
 	{
 		usart_changing_pack(&usart_packets[idx], &crc[idx], uid);
-		LL_GPIO_SetOutputPin(GPIOC, LL_GPIO_PIN_4);
+		LL_GPIO_SetOutputPin(GPIO_RDE, USART1_RDE_PIN);
 		usart_txe_callback(&usart_packets[idx], crc[idx]);
 	}
 	return idx;
@@ -647,15 +647,53 @@ uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uin
 			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx], idx, flags, USARTx, HEADER_SIZE);
 			break;
 		case STATE_RCV_DATA:
-			flags->whoami = usart_packets[idx].header.flags&0x4;
-			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].chunk_header.payload_sz);
+			usart_rcv_state[idx] += usart_receiving((uint8_t *)&usart_packets[idx].data, idx, flags, USARTx, usart_packets[idx].hdr.chunk_header.payload_sz);
 			break;
 		case STATE_RCV_CRC:
 			usart_rcv_state[idx] -= 2*usart_receiving((uint8_t *)&crc[idx], idx, flags, USARTx, 2);
-			if (usart_rcv_state[idx] == STATE_RCV_HEADER && crc[idx] == crc16(0, &usart_packets[idx],HEADER_SIZE+usart_packets[idx].chunk_header.payload_sz))
+			if (usart_rcv_state[idx] == STATE_RCV_HEADER && crc[idx] == crc16(0xFFFF, &usart_packets[idx],HEADER_SIZE+usart_packets[idx].hdr.chunk_header.payload_sz))
 			{
 				flags->usart1_tx_start = 1;
 				return 1;
+			}
+			break;
+	}
+	
+	return 0;
+}
+
+static uint32_t check_crc(usart_packet *pack, uint16_t crc, uint32_t whoami)
+{
+	uint16_t checking_crc =  crc16(0xFFFF, pack ,HEADER_SIZE);
+	if (whoami) checking_crc = crc16(checking_crc,&pack->whoami,pack->hdr.chunk_header.payload_sz);
+	else checking_crc = crc16(checking_crc, &pack->data, pack->hdr.chunk_header.payload_sz);
+	return (crc == checking_crc);
+}
+
+
+static void rxne_check_whoami (usart_packet *pack, struct flags *flags)
+{
+	flags->whoami = (pack->hdr.chunk_header.id == 0);
+}
+
+uint32_t usart1_rxne_callback(usart_packet *usart_packet, uint16_t crc, struct flags *flags)
+{
+	static enum usart_rcv_state usart_rcv_state = {STATE_RCV_HEADER};
+	
+	switch (usart_rcv_state){
+		case STATE_RCV_HEADER:
+			usart_rcv_state += usart_receiving((uint8_t *)usart_packets, idx, flags, USART1, HEADER_SIZE);
+			break;
+		case STATE_RCV_DATA:
+			usart_rcv_state += usart_receiving((uint8_t *)usart_packet->data, idx, flags, USART1, usart_packets[idx].hdr.chunk_header.payload_sz);
+			break;
+		case STATE_RCV_CRC:
+			usart_rcv_state -= 2*usart_receiving((uint8_t *)&crc, idx, flags, USART1, 2);
+			if (usart_rcv_state == STATE_RCV_HEADER)
+			{
+				flags->whoami = (usart_packet->hdr.chunk_header.type == 0)&&(usart_packet->hdr.chunk_header.payload_sz == 0);
+				flags->usart1_tx_start = check_crc(usart_packet, crc, flags->whoami);
+				return flags->usart1_tx_start;
 			}
 			break;
 	}
