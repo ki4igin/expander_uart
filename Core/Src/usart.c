@@ -508,14 +508,14 @@ static void usart_receive (uint8_t *data, uint32_t len, USART_TypeDef *USARTx)
 }
 
 /** TXE FUNCTIONS **/
-static uint32_t usart_sending (const void *data, uint32_t sz)
+static uint32_t usart_sending (const void *data, uint32_t sz, USART_TypeDef *USARTx)
 {
 	static uint32_t cnt = 0;
 	
 	if (sz == 0)
 		return 1;
 	
-	LL_USART_TransmitData8(USART1,*(uint8_t *)(data+cnt));
+	LL_USART_TransmitData8(USARTx,*(uint8_t *)(data+cnt));
 	cnt++;
 	
 	if (cnt > sz - 1) {
@@ -526,25 +526,25 @@ static uint32_t usart_sending (const void *data, uint32_t sz)
 	return 0;
 }
 
-void usart_txe_callback(usart_packet *pack, uint16_t crc)
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef *USARTx)
 {
 	static enum usart_send_state usart_send_state = STATE_SEND_HEADER;
 	
 	switch(usart_send_state)
 	{
 		case STATE_SEND_HEADER:
-			usart_send_state += usart_sending(pack, HEADER_SIZE);
+			usart_send_state += usart_sending(pack, HEADER_SIZE,  USARTx);
 			break;
 		case STATE_SEND_DATA:
-			if(flags.whoami) usart_send_state += usart_sending(&pack->whoami, pack->hdr.chunk_header.payload_sz);
-			else usart_send_state += usart_sending(pack->data, pack->hdr.chunk_header.payload_sz);
+			if(flags.whoami) usart_send_state += usart_sending(&pack->whoami, pack->hdr.chunk_header.payload_sz, USARTx);
+			else usart_send_state += usart_sending(pack->data, pack->hdr.chunk_header.payload_sz, USARTx);
 			break;
 		case STATE_SEND_CRC:
-			usart_send_state += usart_sending(&crc, 2);
+			usart_send_state += usart_sending(&crc, 2, USARTx);
 			break;
 		case STATE_END:
-			LL_USART_DisableIT_TXE(USART1);
-			LL_USART_EnableIT_TC(USART1);
+			LL_USART_DisableIT_TXE(USARTx);
+			LL_USART_EnableIT_TC(USARTx);
 			usart_send_state = 	STATE_SEND_HEADER;
 			break;
 	}

@@ -157,7 +157,7 @@ uint32_t usart_start_transmission(usart_packet usart_packets[8], uint16_t crc[8]
 uint32_t usart_rxne_callback(usart_packet usart_packets[8], uint16_t crc[8], uint32_t idx, struct flags *flags, USART_TypeDef *USARTx);
 
 uint32_t usart1_rxne_callback(usart_packet *usart_packet, uint16_t crc, struct flags *flags);
-void usart_txe_callback(usart_packet *pack, uint16_t crc);
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef USARTx);
 
 /* USER CODE END Private defines */
 

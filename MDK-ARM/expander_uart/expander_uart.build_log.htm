@@ -27,13 +27,37 @@ Project File Date:  11/15/2023
 <h2>Output:</h2>
 *** Using Compiler 'V6.19', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'expander_uart'
-compiling stm32f4xx_it.c...
+../Core/Src/main.c(132): error: too few arguments to function call, expected 3, have 2
+                                usart_txe_callback(&usart1_packet, usart1_crc);
+                                ~~~~~~~~~~~~~~~~~~                           ^
+../Core/Inc\usart.h(160): note: 'usart_txe_callback' declared here
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef USARTx);
+     ^
+1 error generated.
 compiling main.c...
+../Core/Src/usart.c(529): error: conflicting types for 'usart_txe_callback'
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef *USARTx)
+     ^
+../Core/Inc\usart.h(160): note: previous declaration is here
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef USARTx);
+     ^
+../Core/Src/usart.c(614): error: too few arguments to function call, expected 3, have 2
+                usart_txe_callback(&usart_packets[idx], crc[idx]);
+                ~~~~~~~~~~~~~~~~~~                              ^
+../Core/Inc\usart.h(160): note: 'usart_txe_callback' declared here
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef USARTx);
+     ^
+2 errors generated.
 compiling usart.c...
-linking...
-Program Size: Code=10866 RO-data=530 RW-data=520 ZI-data=2072  
-FromELF: creating hex file...
-"expander_uart\expander_uart.axf" - 0 Error(s), 0 Warning(s).
+../Core/Src/stm32f4xx_it.c(219): error: too few arguments to function call, expected 3, have 2
+                usart_txe_callback(&usart_packets[idx], crc[idx]);
+                ~~~~~~~~~~~~~~~~~~                              ^
+../Core/Inc\usart.h(160): note: 'usart_txe_callback' declared here
+void usart_txe_callback(usart_packet *pack, uint16_t crc, USART_TypeDef USARTx);
+     ^
+1 error generated.
+compiling stm32f4xx_it.c...
+"expander_uart\expander_uart.axf" - 4 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -57,6 +81,7 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.6.0
       Include file:  CMSIS/Core/Include/tz_context.h
+Target not created.
 Build Time Elapsed:  00:00:01
 </pre>
 </body>
