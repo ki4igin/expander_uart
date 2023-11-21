@@ -1,203 +1,83 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file    stm32f4xx_it.c
-  * @brief   Interrupt Service Routines.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usart.h"
 #include "stm32f4xx_it.h"
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN TD */
-
-/* USER CODE END TD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-usart_packet usart_packets[8] = {0};
-uint16_t crc[8] = {0};
-
-usart_packet usart1_packet = {0};
-uint16_t usart1_crc = 0;
-struct flags flags = {0};
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
+#include "usart_ex.h"
 
 /* External variables --------------------------------------------------------*/
-
-/* USER CODE BEGIN EV */
-
-/* USER CODE END EV */
 
 /******************************************************************************/
 /*           Cortex-M4 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
-  * @brief This function handles Non maskable interrupt.
-  */
+ * @brief This function handles Non maskable interrupt.
+ */
 void NMI_Handler(void)
 {
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-  while (1)
-  {
-  }
-  /* USER CODE END NonMaskableInt_IRQn 1 */
+    while (1) {
+    }
 }
 
 /**
-  * @brief This function handles Hard fault interrupt.
-  */
+ * @brief This function handles Hard fault interrupt.
+ */
 void HardFault_Handler(void)
 {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
+    while (1) {
+    }
 }
 
 /**
-  * @brief This function handles Memory management fault.
-  */
+ * @brief This function handles Memory management fault.
+ */
 void MemManage_Handler(void)
 {
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
+    while (1) {
+    }
 }
 
 /**
-  * @brief This function handles Pre-fetch fault, memory access fault.
-  */
+ * @brief This function handles Pre-fetch fault, memory access fault.
+ */
 void BusFault_Handler(void)
 {
-  /* USER CODE BEGIN BusFault_IRQn 0 */
-
-  /* USER CODE END BusFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
-		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
-    /* USER CODE END W1_BusFault_IRQn 0 */
-  }
+    while (1) {
+    }
 }
 
 /**
-  * @brief This function handles Undefined instruction or illegal state.
-  */
+ * @brief This function handles Undefined instruction or illegal state.
+ */
 void UsageFault_Handler(void)
 {
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
-
-  /* USER CODE END UsageFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
-		LL_GPIO_SetOutputPin(DEBUG_GPIO, LED_RED_PIN);
-    /* USER CODE END W1_UsageFault_IRQn 0 */
-  }
+    while (1) {
+    }
 }
 
 /**
-  * @brief This function handles System service call via SWI instruction.
-  */
+ * @brief This function handles System service call via SWI instruction.
+ */
 void SVC_Handler(void)
 {
-  /* USER CODE BEGIN SVCall_IRQn 0 */
-
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
-
-  /* USER CODE END SVCall_IRQn 1 */
 }
 
 /**
-  * @brief This function handles Debug monitor.
-  */
+ * @brief This function handles Debug monitor.
+ */
 void DebugMon_Handler(void)
 {
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
 /**
-  * @brief This function handles Pendable request for system service.
-  */
+ * @brief This function handles Pendable request for system service.
+ */
 void PendSV_Handler(void)
 {
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
 }
 
 /**
-  * @brief This function handles System tick timer.
-  */
+ * @brief This function handles System tick timer.
+ */
 void SysTick_Handler(void)
 {
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -207,138 +87,20 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
-/**
-  * @brief This function handles USART1 global interrupt.
-  */
-void USART1_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART1_IRQn 0 */
-	/**TRANSMISSION**/
-	if(LL_USART_IsActiveFlag_TXE(USART1) && LL_USART_IsEnabledIT_TXE(USART1) && flags.usart1_tx_busy)
-	{
-		usart_txe_callback(&usart_packets[idx], crc[idx]);
-	}
-	
-	if (LL_USART_IsActiveFlag_TC(USART1) && LL_USART_IsEnabledIT_TC(USART1))
-	{
-		LL_USART_ClearFlag_TC(USART1);
-		LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_4);
-		flags.usart1_tx_busy = 0;
-		LL_USART_DisableIT_TC(USART1);
-	}
-  /* USER CODE END USART1_IRQn 0 */
-  /* USER CODE BEGIN USART1_IRQn 1 */
-	/**RECEPTION**/
-	flags.usart1_rx_end = usart1_rxne_callback(&usart1_packet, usart1_crc, &flags);
-  /* USER CODE END USART1_IRQn 1 */
-}
+#define declare_usart_irq_handler(_name)             \
+    void _name##_IRQHandler(void)                    \
+    {                                                \
+        uart_irq_callback(&uarts[UART_NUM_##_name]); \
+    }
 
-/**
-  * @brief This function handles USART2 global interrupt.
-  */
-void USART2_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART2_IRQn 0 */
-	flags.usart2_rx = usart_rxne_callback(usart_packets, crc, IDX_USART2, &flags, USART2);
-
-  /* USER CODE END USART2_IRQn 0 */
-  /* USER CODE BEGIN USART2_IRQn 1 */
-
-  /* USER CODE END USART2_IRQn 1 */
-}
-
-/**
-  * @brief This function handles USART3 global interrupt.
-  */
-void USART3_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART3_IRQn 0 */
-	flags.usart3_rx = usart_rxne_callback(usart_packets, crc, IDX_USART3, &flags, USART3);
-
-  /* USER CODE END USART3_IRQn 0 */
-  /* USER CODE BEGIN USART3_IRQn 1 */
-
-  /* USER CODE END USART3_IRQn 1 */
-}
-
-/**
-  * @brief This function handles UART4 global interrupt.
-  */
-void UART4_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART4_IRQn 0 */
-	flags.uart4_rx = usart_rxne_callback(usart_packets, crc, IDX_UART4, &flags, UART4);
-  /* USER CODE END UART4_IRQn 0 */
-  /* USER CODE BEGIN UART4_IRQn 1 */
-
-  /* USER CODE END UART4_IRQn 1 */
-}
-
-/**
-  * @brief This function handles UART5 global interrupt.
-  */
-void UART5_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART5_IRQn 0 */
-	flags.uart5_rx =usart_rxne_callback(usart_packets, crc, IDX_UART5, &flags, UART5);
-  /* USER CODE END UART5_IRQn 0 */
-  /* USER CODE BEGIN UART5_IRQn 1 */
-
-  /* USER CODE END UART5_IRQn 1 */
-}
-
-/**
-  * @brief This function handles USART6 global interrupt.
-  */
-void USART6_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART6_IRQn 0 */
-	flags.usart6_rx =usart_rxne_callback(usart_packets, crc, IDX_USART6, &flags, USART6);
-  /* USER CODE END USART6_IRQn 0 */
-  /* USER CODE BEGIN USART6_IRQn 1 */
-
-  /* USER CODE END USART6_IRQn 1 */
-}
-
-/**
-  * @brief This function handles UART7 global interrupt.
-  */
-void UART7_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART7_IRQn 0 */
-	flags.uart7_rx =usart_rxne_callback(usart_packets, crc, IDX_UART7, &flags, UART7);
-  /* USER CODE END UART7_IRQn 0 */
-  /* USER CODE BEGIN UART7_IRQn 1 */
-
-  /* USER CODE END UART7_IRQn 1 */
-}
-
-/**
-  * @brief This function handles UART8 global interrupt.
-  */
-void UART8_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART8_IRQn 0 */
-	flags.uart8_rx =usart_rxne_callback(usart_packets, crc, IDX_UART8, &flags, UART8);
-  /* USER CODE END UART8_IRQn 0 */
-  /* USER CODE BEGIN UART8_IRQn 1 */
-
-  /* USER CODE END UART8_IRQn 1 */
-}
-
-/**
-  * @brief This function handles UART9 global interrupt.
-  */
-void UART9_IRQHandler(void)
-{
-  /* USER CODE BEGIN UART9_IRQn 0 */
-	flags.uart9_rx =usart_rxne_callback(usart_packets, crc, IDX_UART9, &flags, UART9);
-  /* USER CODE END UART9_IRQn 0 */
-  /* USER CODE BEGIN UART9_IRQn 1 */
-
-  /* USER CODE END UART9_IRQn 1 */
-}
-
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
+// clang-format off
+declare_usart_irq_handler(USART1)
+declare_usart_irq_handler(USART2)
+declare_usart_irq_handler(USART3)
+declare_usart_irq_handler(UART4)
+declare_usart_irq_handler(UART5)
+declare_usart_irq_handler(USART6)
+declare_usart_irq_handler(UART7)
+declare_usart_irq_handler(UART8)
+declare_usart_irq_handler(UART9)
+    // clang-format on
