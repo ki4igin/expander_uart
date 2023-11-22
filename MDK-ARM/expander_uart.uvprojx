@@ -536,6 +536,21 @@
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f4xx_it.c</FilePath>
             </File>
+            <File>
+              <FileName>aura.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\aura.c</FilePath>
+            </File>
+            <File>
+              <FileName>newlib_dummy.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\newlib_dummy.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\usart_ex.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
