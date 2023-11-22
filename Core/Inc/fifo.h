@@ -52,7 +52,7 @@ inline static uint8_t *fifo_get_phead(struct fifo *f, uint32_t size)
 inline static void fifo_push(struct fifo *f, void *data, uint32_t size)
 {
     uint8_t *p = fifo_get_phead(f, size);
-    memcpy_u8(p, data, size);
+    memcpy_u8(data, p, size);
     fifo_inc_head(f, size);
 }
 
@@ -117,7 +117,8 @@ inline static uint32_t *fifo_get_phead(struct fifo *f, uint32_t len)
     return &f->data[f->head];
 }
 
-inline static void fifo_push(struct fifo *f, void *data, uint32_t size)
+//inline 
+static void fifo_push(struct fifo *f, void *data, uint32_t size)
 {
     uint32_t len = (size + 3) >> 2; // len в количестве u32
     uint32_t *p = fifo_get_phead(f, len);

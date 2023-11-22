@@ -13,5 +13,4 @@ inline static uint32_t crc16_is_valid(const void *buf, uint32_t size)
 {
     return crc16_calc(buf, size) == 0;
 }
-
 #endif

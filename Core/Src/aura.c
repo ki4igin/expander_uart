@@ -14,6 +14,7 @@
 #define AURA_MAX_CHUNK_CNT 18
 
 #define AURA_CHUNK_HDR_SIZE 4
+#define AURA_HDR_SIZE 20
 
 struct fifo send_fifo;
 
@@ -78,10 +79,15 @@ struct header {
     uint32_t cnt;
     uint32_t uid_src;
     uint32_t uid_dest;
-		uint32_t cmd : 16;
-		uint32_t data_sz : 16;
+		uint16_t cmd;
+		uint16_t data_sz;
 };
-
+struct chunk_hdr{
+		uint8_t id;
+    uint8_t type;
+    uint16_t size;
+};
+	
 struct chunk {
     uint8_t id;
     uint8_t type;
@@ -99,7 +105,7 @@ struct pack {
 // clang-format off
 static struct pack_whoami {
     struct header header;
-    struct chunk chunk;
+		struct chunk_hdr chunk;
     uint32_t device_type;
     crc16_t crc;
 } pack_whoami = {
@@ -151,8 +157,9 @@ static void cmd_work_master()
     switch (p->header.cmd) {
     case CMD_REQ_WHOAMI: {
         pack_whoami.header.cnt = p->header.cnt;
-        crc16_add2pack(&pack_whoami, sizeof(pack_whoami));
-        fifo_push(&send_fifo, p, sizeof(pack_whoami));
+				struct pack_whoami *pnt = &pack_whoami;
+        crc16_add2pack(pnt, 30);
+        fifo_push(&send_fifo, pnt, 30);
     } break;
     default: {
     } break;
@@ -248,6 +255,8 @@ void uart_recv_complete_callback(struct uart *u)
 
     switch (*s) {
     case STATE_RECV_START: {
+				*cc = 0;
+				*bc = 0;
         if (p->header.data_sz)
 				{
 					//receiving chunk hdr
@@ -261,7 +270,7 @@ void uart_recv_complete_callback(struct uart *u)
 					*s = STATE_RECV_CRC;
 					uart_recv_array(u, &p->crc, 2);
 				}
-				*cc = 0;
+
     } break;
     case STATE_RECV_CHUNK_HDR: {
         *s = STATE_RECV_CHUNK_DATA;
@@ -284,10 +293,15 @@ void uart_recv_complete_callback(struct uart *u)
 
     } break;
     case STATE_RECV_CRC: {
-			uint32_t pack_size = sizeof(struct header)
-						 + *bc
-						 + sizeof(crc16_t);
-			if (crc16_is_valid(p, pack_size)) {
+
+			uint32_t calc_crc = crc16_calc(p, AURA_HDR_SIZE);
+			while(*cc)
+			{
+				uint32_t chunk_sz = AURA_CHUNK_HDR_SIZE+p->chunk[*cc].size;
+				calc_crc = crc16_calc_continue(calc_crc, &p->chunk[*cc--], chunk_sz);
+			}
+			
+			if (p->crc == calc_crc) {
 					aura_flags_pack_received[num] = 1;
 			}
 			aura_recv_package(num);
