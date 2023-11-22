@@ -9,12 +9,19 @@
 #define AURA_MAX_REPEATERS 4
 #define AURA_EXPANDER_ID   8
 #define AURA_MAX_DATA_SIZE 128
+#define AURA_MAX_DATA_SIZE_IN_CHUNK 16
+#define AURA_MAX_CHUNK_CNT 18
+
+#define AURA_CHUNK_HDR_SIZE 4
 
 struct fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
-    STATE_RECV_CHUNK,
+		STATE_OVERALL_SIZE_CHECKED,
+    STATE_RECV_CHUNK_HDR,
+		STATE_RECV_CHUNK_DATA,
+		STATE_CHUNK_AMOUNT_CHECKED,
     STATE_RECV_CRC,
 };
 
@@ -27,7 +34,7 @@ enum chunk_type {
     CHUNK_TYPE_I32 = 5,
     CHUNK_TYPE_U32 = 6,
     CHUNK_TYPE_F32 = 7,
-    CHUNK_TYPE_f64 = 8,
+    CHUNK_TYPE_F64 = 8,
     CHUNK_TYPE_STR = 9,
 };
 
@@ -41,12 +48,15 @@ struct header {
     uint32_t cnt;
     uint32_t uid_src;
     uint32_t uid_dest;
+		uint32_t cmd : 16;
+		uint32_t data_sz : 16;
 };
 
 struct chunk {
     uint8_t id;
     uint8_t type;
     uint16_t size;
+		uint8_t data[AURA_MAX_DATA_SIZE_IN_CHUNK];
 };
 
 struct data_whoami {
@@ -56,8 +66,8 @@ struct data_whoami {
 
 struct pack {
     struct header header;
-    struct chunk chunk;
-    uint8_t data[AURA_MAX_DATA_SIZE];
+    struct chunk chunk[AURA_MAX_CHUNK_CNT];
+    //uint8_t data[AURA_MAX_DATA_SIZE];
     crc16_t crc;
 };
 
@@ -91,7 +101,7 @@ static void aura_recv_package(uint32_t num)
     states_recv[num] = STATE_RECV_START;
     struct uart *u = &uarts[num];
     struct pack *p = &packs[num];
-    uart_recv_array(u, p, sizeof(struct header) + sizeof(struct chunk));
+    uart_recv_array(u, p, sizeof(struct header));
 }
 
 static void cmd_work_master()
@@ -157,7 +167,7 @@ static void send_resp_data()
     if ((p->header.uid_src != pack_whoami.header.uid_src)
         && (p->chunk.id == CHUNK_ID_WHOIM)) {
         for (uint32_t i = 0; i < AURA_MAX_REPEATERS; i++) {
-            struct data_whoami *d = (struct data_whoami *)p->data;
+            struct data_whoami *d = (struct data_whoami *)p->chunk.data;
             if (d->uid_repeaters[i] == 0) {
                 d->uid_repeaters[i] = pack_whoami.header.uid_src;
                 crc16_add2pack(p, pack_size);
@@ -187,26 +197,53 @@ void aura_init(void)
 void uart_recv_complete_callback(struct uart *u)
 {
     uint32_t num = u->num;
+		static uint32_t chunk_cnt[UART_COUNT] = {0};
+		static uint32_t byte_cnt[UART_COUNT] = {0};
+	
     enum state_recv *s = &states_recv[num];
     struct pack *p = &packs[num];
+		uint32_t *cc = &chunk_cnt[num];
+		uint32_t *bc = &byte_cnt[num];
 
     switch (*s) {
     case STATE_RECV_START: {
-        *s = STATE_RECV_CHUNK;
-        struct chunk *c = &p->chunk;
-        uart_recv_array(u, p->data, c->size + sizeof(crc16_t));
+        if (p->header.data_sz) 
+					*s = STATE_CHUNK_AMOUNT_CHECKED; //go to receiving crc
+				else 
+					*s = STATE_OVERALL_SIZE_CHECKED; // go to receiving chunks
+				*cc = 0;
     } break;
-    case STATE_RECV_CHUNK: {
-        *s = STATE_RECV_CRC;
-        uint32_t pack_size = sizeof(struct header)
-                           + sizeof(struct chunk)
-                           + p->chunk.size
-                           + sizeof(crc16_t);
-        if (crc16_is_valid(p, pack_size)) {
-            aura_flags_pack_received[num] = 1;
-        }
-        aura_recv_package(num);
+		case STATE_OVERALL_SIZE_CHECKED:{
+				*s = STATE_RECV_CHUNK_HDR;
+				*bc += AURA_CHUNK_HDR_SIZE;
+        uart_recv_array(u, &p->chunk[*cc], AURA_CHUNK_HDR_SIZE);
+		} break;
+    case STATE_RECV_CHUNK_HDR: {
+        *s = STATE_RECV_CHUNK_DATA;
+				*bc += p->chunk[*cc].size;
+        uart_recv_array(u, p->chunk[*cc].data, p->chunk[*cc].size);
     } break;
+		case STATE_RECV_CHUNK_DATA: {
+				
+        if(*bc < p->header.data_sz)
+				{
+					*cc = *cc+1;;
+					*s = STATE_OVERALL_SIZE_CHECKED;
+				}
+				else
+					*s = STATE_CHUNK_AMOUNT_CHECKED;
+
+    } break;
+		case STATE_CHUNK_AMOUNT_CHECKED: {
+			*s = STATE_RECV_CRC;
+			uint32_t pack_size = sizeof(struct header)
+									 + *bc
+									 + sizeof(crc16_t);
+			if (crc16_is_valid(p, pack_size)) {
+					aura_flags_pack_received[num] = 1;
+			}
+			aura_recv_package(num);
+		} break;
     case STATE_RECV_CRC: {
     } break;
     }
