@@ -113,6 +113,7 @@ static struct pack_whoami {
         .protocol = AURA_PROTOCOL,
 				.uid_dest = AURA_PC_ID,
 				.cmd = CMD_ANS_WHOAMI,
+				.data_sz = 8,
     },
     .chunk = {
         .id = CHUNK_ID_TYPE,
@@ -191,11 +192,23 @@ static void send_resp_data()
         return;
     }
 		// taking data from fifo
+		// takigng header
     struct pack *p = (struct pack *)fifo_get_ptail(&send_fifo);
+		fifo_inc_tail(&send_fifo, sizeof(struct header));
+		//taking chunks from fifo
+		uint32_t data_sz = p->header.data_sz;
+		uint32_t cnt = 0;
+		while(data_sz)
+		{
+			struct chunk *c = (struct chunk *)fifo_get_ptail(&send_fifo);
+			memcpy_u8(c,&p->chunk[cnt++], AURA_CHUNK_HDR_SIZE + c->size);
+			data_sz -= AURA_CHUNK_HDR_SIZE + c->size;
+			fifo_inc_tail(&send_fifo, AURA_CHUNK_HDR_SIZE + c->size);
+		}
+			
     uint32_t pack_size = sizeof(struct header)
                        + p->header.data_sz
                        + sizeof(crc16_t);
-    fifo_inc_tail(&send_fifo, pack_size);
 		
     if ((p->header.uid_src != pack_whoami.header.uid_src)
         && (p->header.cmd == CMD_ANS_WHOAMI)) {
