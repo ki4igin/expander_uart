@@ -6,6 +6,7 @@
 #include "fifo.h"
 
 #define AURA_PROTOCOL      0x41525541U
+#define AURA_PC_ID				 0x00000000U
 #define AURA_MAX_REPEATERS 4
 #define AURA_EXPANDER_ID   8
 #define AURA_MAX_DATA_SIZE 128
@@ -38,9 +39,33 @@ enum chunk_type {
     CHUNK_TYPE_STR = 9,
 };
 
-enum chunk_id {
-    CHUNK_ID_WHOIM = 0,
-    CHUNK_ID_STATUS = 1,
+enum cmd {
+    CMD_REQ_WHOAMI = 1,
+		CMD_ANS_WHOAMI = 2,
+    CMD_REQ_DATA = 3,
+		CMD_ANS_DATA = 4,
+};
+
+enum chunk_id{
+		CHUNK_ID_TYPE = 1,
+		CHUNK_ID_UIDS = 2,
+		CHUNK_ID_ONOFF  = 3,
+		CHUNK_ID_TEMP = 4,
+		CHUNK_ID_HUM = 5,
+		CHUNK_ID_PRESS = 6,
+		CHUNK_ID_WETSENS  = 7,
+};
+
+enum device_type{
+		DEVICE_TYPE_LB75BD,
+		DEVICE_TYPE_TMP112,
+		DEVICE_TYPE_SHT30,
+		DEVICE_TYPE_ZS05,
+		DEVICE_TYPE_BMP180,
+		DEVICE_TYPE_LPS22HB,
+		DEVICE_TYPE_DOORKNOT,
+		DEVICE_TYPE_EXPANDER,
+		DEVICE_TYPE_WETSENS,
 };
 
 struct header {
@@ -59,11 +84,6 @@ struct chunk {
 		uint8_t data[AURA_MAX_DATA_SIZE_IN_CHUNK];
 };
 
-struct data_whoami {
-    uint32_t id_handle;
-    uint32_t uid_repeaters[AURA_MAX_REPEATERS];
-};
-
 struct pack {
     struct header header;
     struct chunk chunk[AURA_MAX_CHUNK_CNT];
@@ -75,17 +95,20 @@ struct pack {
 static struct pack_whoami {
     struct header header;
     struct chunk chunk;
-    struct data_whoami data;
+    uint32_t device_type;
     crc16_t crc;
 } pack_whoami = {
     .header = {
         .protocol = AURA_PROTOCOL,
+				.uid_dest = AURA_PC_ID,
+				.cmd = CMD_ANS_WHOAMI,
     },
     .chunk = {
-        .id = CHUNK_ID_WHOIM,
+        .id = CHUNK_ID_TYPE,
         .type = CHUNK_TYPE_U32,
-        .size = sizeof(struct data_whoami),        
+        .size = 4,        
     },
+		.device_type = DEVICE_TYPE_EXPANDER,
 };
 
 // clang-format on
@@ -113,16 +136,15 @@ static void cmd_work_master()
     struct pack *p = &packs[0];
     if (p->header.uid_dest == 0) {
         uint32_t pack_size = sizeof(struct header)
-                           + sizeof(struct chunk)
-                           + p->chunk.size
+                           + p->header.data_sz
                            + sizeof(crc16_t);
         for (uint32_t i = 1; i < UART_COUNT; i++) {
             uart_send_array(&uarts[i], p, pack_size);
         }
     }
-    struct chunk *c = &p->chunk;
-    switch (c->id) {
-    case CHUNK_ID_WHOIM: {
+		
+    switch (p->header.cmd) {
+    case CMD_REQ_WHOAMI: {
         pack_whoami.header.cnt = p->header.cnt;
         crc16_add2pack(&pack_whoami, sizeof(pack_whoami));
         fifo_push(&send_fifo, p, sizeof(pack_whoami));
@@ -141,8 +163,7 @@ static void cmd_work_slave(uint32_t num)
 
     struct pack *p = &packs[num];
     uint32_t pack_size = sizeof(struct header)
-                       + sizeof(struct chunk)
-                       + p->chunk.size
+                       + p->header.data_sz
                        + sizeof(crc16_t);
 
     fifo_push(&send_fifo, p, pack_size);
