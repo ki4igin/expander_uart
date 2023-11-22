@@ -19,10 +19,8 @@ struct fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
-		STATE_OVERALL_SIZE_CHECKED,
     STATE_RECV_CHUNK_HDR,
 		STATE_RECV_CHUNK_DATA,
-		STATE_CHUNK_AMOUNT_CHECKED,
     STATE_RECV_CRC,
 };
 
@@ -250,17 +248,21 @@ void uart_recv_complete_callback(struct uart *u)
 
     switch (*s) {
     case STATE_RECV_START: {
-        if (p->header.data_sz) 
-					*s = STATE_CHUNK_AMOUNT_CHECKED; //go to receiving crc
+        if (p->header.data_sz)
+				{
+					//receiving chunk hdr
+					*s = STATE_RECV_CHUNK_HDR;
+					*bc += AURA_CHUNK_HDR_SIZE;
+					uart_recv_array(u, &p->chunk[*cc], AURA_CHUNK_HDR_SIZE);
+				}
 				else 
-					*s = STATE_OVERALL_SIZE_CHECKED; // go to receiving chunks
+				{
+					//receiving crc
+					*s = STATE_RECV_CRC;
+					uart_recv_array(u, &p->crc, 2);
+				}
 				*cc = 0;
     } break;
-		case STATE_OVERALL_SIZE_CHECKED:{
-				*s = STATE_RECV_CHUNK_HDR;
-				*bc += AURA_CHUNK_HDR_SIZE;
-        uart_recv_array(u, &p->chunk[*cc], AURA_CHUNK_HDR_SIZE);
-		} break;
     case STATE_RECV_CHUNK_HDR: {
         *s = STATE_RECV_CHUNK_DATA;
 				*bc += p->chunk[*cc].size;
@@ -270,24 +272,25 @@ void uart_recv_complete_callback(struct uart *u)
 				
         if(*bc < p->header.data_sz)
 				{
+					*s = STATE_RECV_CHUNK_HDR;
 					*cc = *cc+1;;
-					*s = STATE_OVERALL_SIZE_CHECKED;
+					uart_recv_array(u, &p->chunk[*cc], AURA_CHUNK_HDR_SIZE);
 				}
 				else
-					*s = STATE_CHUNK_AMOUNT_CHECKED;
+				{
+					*s = STATE_RECV_CRC;
+					uart_recv_array(u, &p->crc, 2);
+				}
 
     } break;
-		case STATE_CHUNK_AMOUNT_CHECKED: {
-			*s = STATE_RECV_CRC;
+    case STATE_RECV_CRC: {
 			uint32_t pack_size = sizeof(struct header)
-									 + *bc
-									 + sizeof(crc16_t);
+						 + *bc
+						 + sizeof(crc16_t);
 			if (crc16_is_valid(p, pack_size)) {
 					aura_flags_pack_received[num] = 1;
 			}
 			aura_recv_package(num);
-		} break;
-    case STATE_RECV_CRC: {
     } break;
     }
 }
