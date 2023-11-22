@@ -27,27 +27,11 @@ Project File Date:  11/22/2023
 <h2>Output:</h2>
 *** Using Compiler 'V6.19', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
 Build target 'expander_uart'
-../Core/Src/aura.c(117): error: member reference base type 'struct chunk[18]' is not a structure or union
-                           + p->chunk.size
-                             ~~~~~~~~^~~~~
-../Core/Src/aura.c(123): warning: incompatible pointer types initializing 'struct chunk *' with an expression of type 'struct chunk (*)[18]' [-Wincompatible-pointer-types]
-    struct chunk *c = &p->chunk;
-                  ^   ~~~~~~~~~
-../Core/Src/aura.c(145): error: member reference base type 'struct chunk[18]' is not a structure or union
-                       + p->chunk.size
-                         ~~~~~~~~^~~~~
-../Core/Src/aura.c(164): error: member reference base type 'struct chunk[18]' is not a structure or union
-                       + p->chunk.size
-                         ~~~~~~~~^~~~~
-../Core/Src/aura.c(168): error: member reference base type 'struct chunk[18]' is not a structure or union
-        && (p->chunk.id == CHUNK_ID_WHOIM)) {
-            ~~~~~~~~^~~
-../Core/Src/aura.c(170): error: member reference base type 'struct chunk[18]' is not a structure or union
-            struct data_whoami *d = (struct data_whoami *)p->chunk.data;
-                                                          ~~~~~~~~^~~~~
-1 warning and 5 errors generated.
 compiling aura.c...
-"expander_uart\expander_uart.axf" - 5 Error(s), 1 Warning(s).
+linking...
+Program Size: Code=10220 RO-data=1040 RW-data=340 ZI-data=7284  
+FromELF: creating hex file...
+"expander_uart\expander_uart.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -71,7 +55,6 @@ Package Vendor: Keil
 
    * Component: ARM::CMSIS:CORE:5.6.0
       Include file:  CMSIS/Core/Include/tz_context.h
-Target not created.
 Build Time Elapsed:  00:00:01
 </pre>
 </body>

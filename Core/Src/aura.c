@@ -37,6 +37,13 @@ enum chunk_type {
     CHUNK_TYPE_F32 = 7,
     CHUNK_TYPE_F64 = 8,
     CHUNK_TYPE_STR = 9,
+		CHUNK_TYPE_ARR_I8 = 10,
+		CHUNK_TYPE_ARR_U8 = 11,
+		CHUNK_TYPE_ARR_I16 = 12,
+		CHUNK_TYPE_ARR_U16 = 13,
+		CHUNK_TYPE_ARR_I32 = 14,
+		CHUNK_TYPE_ARR_U32 = 15,
+		CHUNK_TYPE_ARR_F32 = 16,
 };
 
 enum cmd {
@@ -178,23 +185,38 @@ static void send_resp_data()
     if (uarts[0].tx.count != 0) {
         return;
     }
-
+		// taking data from fifo
     struct pack *p = (struct pack *)fifo_get_ptail(&send_fifo);
     uint32_t pack_size = sizeof(struct header)
-                       + sizeof(struct chunk)
-                       + p->chunk.size
+                       + p->header.data_sz
                        + sizeof(crc16_t);
     fifo_inc_tail(&send_fifo, pack_size);
+		
     if ((p->header.uid_src != pack_whoami.header.uid_src)
-        && (p->chunk.id == CHUNK_ID_WHOIM)) {
-        for (uint32_t i = 0; i < AURA_MAX_REPEATERS; i++) {
-            struct data_whoami *d = (struct data_whoami *)p->chunk.data;
-            if (d->uid_repeaters[i] == 0) {
-                d->uid_repeaters[i] = pack_whoami.header.uid_src;
-                crc16_add2pack(p, pack_size);
-                break;
-            }
-        }
+        && (p->header.cmd == CMD_ANS_WHOAMI)) {
+				// check amounts of chunks
+				uint32_t sens_id_sz = AURA_CHUNK_HDR_SIZE + p->chunk[0].size;
+				if (p->header.data_sz > sens_id_sz)
+				{
+					//create new chunk
+					struct chunk *nc = &p->chunk[1];
+					nc->id = CHUNK_ID_UIDS;
+					nc->type = CHUNK_TYPE_ARR_U32;
+					nc->size = 4;
+					memcpy_u8(&uid, nc->data, nc->size);
+					
+					p->header.data_sz += nc->size;
+				}
+				else
+				{
+					//add uid to second chunk
+					uint32_t bias = p->header.data_sz - AURA_CHUNK_HDR_SIZE;
+					memcpy_u8(&uid, (&p->chunk[1].data + bias), 4);
+					
+					p->header.data_sz += 4;
+				}
+				//calculate crc
+				crc16_add2pack(p, pack_size);
     }
     uart_send_array(&uarts[0], p, pack_size);
 }
