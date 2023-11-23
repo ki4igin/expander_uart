@@ -150,6 +150,7 @@ static void cmd_work_master()
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
                            + sizeof(crc16_t);
+				crc16_add2pack(p, pack_size);
         for (uint32_t i = 1; i < UART_COUNT; i++) {
             uart_send_array(&uarts[i], p, pack_size);
         }
@@ -173,13 +174,61 @@ static void cmd_work_slave(uint32_t num)
     if (aura_flags_pack_received[num] == 0) {
         return;
     }
+		struct pack *p = &packs[num];
+		
+		//adding new chunk
+		switch (p->header.cmd) {
+    case CMD_ANS_WHOAMI: {
+				// adding new chunk
+				uint32_t uid = pack_whoami.header.uid_src;
+				uint32_t uid_size = sizeof(uid);
 
-    struct pack *p = &packs[num];
-    uint32_t pack_size = sizeof(struct header)
-                       + p->header.data_sz
-                       + sizeof(crc16_t);
-
-    fifo_push(&send_fifo, p, pack_size);
+				if(p->chunk[1].id == CHUNK_ID_UIDS)
+				{
+					uint16_t *bias = &p->chunk[1].size;
+					p->header.data_sz += uid_size;
+					memcpy_u8(&uid, p->chunk[1].data + *bias, uid_size);
+					*bias += uid_size;
+				}
+				else
+				{
+					p->header.data_sz += AURA_CHUNK_HDR_SIZE +  uid_size;
+					p->chunk[1].id = CHUNK_ID_UIDS;
+					p->chunk[1].type = CHUNK_TYPE_ARR_U32;
+					p->chunk[1].size =  uid_size;
+					memcpy_u8(&uid,p->chunk[1].data,  uid_size);
+				}
+    } break;
+    default: {
+    } break;
+    }
+		
+		//pushing hdr into fifo
+		uint32_t pack_size = sizeof(struct header);
+		fifo_push(&send_fifo, p, pack_size);
+		uint32_t crc = crc16_calc(p, pack_size);
+		
+		//calculating amount of chunks
+		uint32_t byte_cnt = p->header.data_sz;
+		uint32_t chunk_cnt = 0;
+		while(byte_cnt)
+		{
+			struct chunk *c = &p->chunk[chunk_cnt];
+			byte_cnt -= AURA_CHUNK_HDR_SIZE + c->size;
+			chunk_cnt++;
+		}
+		
+		//pushing chunks into fifo
+		do
+		{
+			struct chunk *c = &p->chunk[0];
+			uint32_t chunk_size = AURA_CHUNK_HDR_SIZE + c->size;
+			fifo_push(&send_fifo, c, chunk_size);
+			crc = crc16_calc_continue(crc, c++, chunk_size);
+		} while(chunk_cnt--);
+		
+		// pushing crc into fifo
+    fifo_push(&send_fifo, &crc, sizeof(crc16_t));
     aura_flags_pack_received[num] = 0;
 }
 
@@ -198,32 +247,6 @@ static void send_resp_data()
                        + p->header.data_sz
                        + sizeof(crc16_t);
 		fifo_inc_tail(&send_fifo, pack_size);
-//    if ((p->header.uid_src != pack_whoami.header.uid_src)
-//        && (p->header.cmd == CMD_ANS_WHOAMI)) {
-//				// check amounts of chunks
-//				uint32_t sens_id_sz = AURA_CHUNK_HDR_SIZE + p->chunk[0].size;
-//				if (p->header.data_sz > sens_id_sz)
-//				{
-//					//create new chunk
-//					struct chunk *nc = &p->chunk[1];
-//					nc->id = CHUNK_ID_UIDS;
-//					nc->type = CHUNK_TYPE_ARR_U32;
-//					nc->size = 4;
-//					memcpy_u8(&uid, nc->data, nc->size);
-//					
-//					p->header.data_sz += nc->size;
-//				}
-//				else
-//				{
-//					//add uid to second chunk
-//					uint32_t bias = p->header.data_sz - AURA_CHUNK_HDR_SIZE;
-//					memcpy_u8(&uid, (&p->chunk[1].data + bias), 4);
-//					
-//					p->header.data_sz += 4;
-//				}
-//				//calculate crc
-//				crc16_add2pack(p, pack_size);
-//    }
     uart_send_array(&uarts[0], p, pack_size);
 }
 
@@ -279,11 +302,10 @@ void uart_recv_complete_callback(struct uart *u)
         uart_recv_array(u, p->chunk[*cc].data, p->chunk[*cc].size);
     } break;
 		case STATE_RECV_CHUNK_DATA: {
-				
+				*cc = *cc+1;
         if(*bc < p->header.data_sz)
 				{
 					*s = STATE_RECV_CHUNK_HDR;
-					*cc = *cc+1;;
 					uart_recv_array(u, &p->chunk[*cc], AURA_CHUNK_HDR_SIZE);
 				}
 				else
@@ -295,11 +317,11 @@ void uart_recv_complete_callback(struct uart *u)
     } break;
     case STATE_RECV_CRC: {
 
-			uint32_t calc_crc = crc16_calc(p, AURA_HDR_SIZE);
+			uint16_t calc_crc = crc16_calc(p, AURA_HDR_SIZE);
 			while(*cc)
 			{
-				uint32_t chunk_sz = AURA_CHUNK_HDR_SIZE+p->chunk[*cc].size;
-				calc_crc = crc16_calc_continue(calc_crc, &p->chunk[*cc--], chunk_sz);
+				uint32_t chunk_sz = AURA_CHUNK_HDR_SIZE+p->chunk[--*cc].size;
+				calc_crc = crc16_calc_continue(calc_crc, &p->chunk[*cc], chunk_sz);
 			}
 			
 			if (p->crc == calc_crc) {
