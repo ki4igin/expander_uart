@@ -26,8 +26,7 @@ struct fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
-    STATE_RECV_HEADER,
-    STATE_RECV_CRC,
+    STATE_RECV_HEADER,    
 };
 
 enum chunk_type {
@@ -340,11 +339,11 @@ void uart_recv_complete_callback(struct uart *u)
                         p->data.raw_data,
                         p->header.data_sz + sizeof(crc16_t));
     } break;
-    case STATE_RECV_CRC: {
+    case STATE_RECV_HEADER: {
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
                            + sizeof(crc16_t);
-        if (crc16_is_valid(p->crc, pack_size)) {
+        if (crc16_is_valid(p, pack_size)) {
             aura_flags_pack_received[num] = 1;
         }
         aura_recv_package(num);
