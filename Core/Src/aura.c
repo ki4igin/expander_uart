@@ -16,6 +16,8 @@
 #define AURA_CHUNK_HDR_SIZE 4
 #define AURA_HDR_SIZE 20
 
+#define AURA_MAX_DEVICES 8
+
 struct fifo send_fifo;
 
 enum state_recv {
@@ -128,6 +130,7 @@ static struct pack_whoami {
 // clang-format on
 
 static uint32_t uid = 0;
+static uint32_t device_ids[AURA_MAX_DEVICES] = {0};
 
 static enum state_recv states_recv[UART_COUNT] = {0};
 static struct pack packs[UART_COUNT] __ALIGNED(8);
@@ -165,6 +168,10 @@ static void cmd_work_master()
         crc16_add2pack(pnt, 30);
         fifo_push(&send_fifo, pnt, 30);
     } break;
+		case CMD_REQ_DATA: {
+			//TODO send state of relays & wet sensors
+			
+		} break;
     default: {
     } break;
     }
@@ -186,6 +193,8 @@ static void cmd_work_slave(uint32_t num)
 				uint32_t uid_size = sizeof(uid);
 			
 				struct chunk *c = p->data.chunk;
+				device_ids[num] = p->header.uid_src;
+			
 				uint32_t bias = c->size;
 				c += bias; //adding bias of first pack
 

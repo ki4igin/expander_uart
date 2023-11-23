@@ -116,4 +116,12 @@ declare_usart_irq_handler(USART6)
 declare_usart_irq_handler(UART7)
 declare_usart_irq_handler(UART8)
 declare_usart_irq_handler(UART9)
+		
+void ADC_IRQHandler(void)
+{
+  /* USER CODE BEGIN ADC_IRQn 0 */
+  /* USER CODE END ADC_IRQn 0 */
+  /* USER CODE BEGIN ADC_IRQn 1 */
+  /* USER CODE END ADC_IRQn 1 */
+}
     // clang-format on

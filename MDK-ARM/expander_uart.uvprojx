@@ -405,6 +405,21 @@
               <FilePath>..\Core\Src\uid_hash.c</FilePath>
             </File>
             <File>
+              <FileName>aura.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\aura.c</FilePath>
+            </File>
+            <File>
+              <FileName>newlib_dummy.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\newlib_dummy.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\usart_ex.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/main.c</FilePath>
@@ -535,21 +550,6 @@
               <FileName>stm32f4xx_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f4xx_it.c</FilePath>
-            </File>
-            <File>
-              <FileName>aura.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\aura.c</FilePath>
-            </File>
-            <File>
-              <FileName>newlib_dummy.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\newlib_dummy.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart_ex.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\usart_ex.c</FilePath>
             </File>
           </Files>
         </Group>
