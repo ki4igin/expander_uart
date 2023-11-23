@@ -4,6 +4,7 @@
 #include "crc16.h"
 #include "usart_ex.h"
 #include "fifo.h"
+#include "dict.h"
 
 #define AURA_PROTOCOL               0x41525541U
 #define AURA_PC_ID                  0x00000000U
@@ -18,11 +19,14 @@
 
 #define AURA_MAX_DEVICES            8
 
+static dict_declare(map, 8 * 8);
+#define map ((struct dict *)map_buf)
+
 struct fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
-    STATE_RECV_DATA,
+    STATE_RECV_HEADER,
     STATE_RECV_CRC,
 };
 
@@ -90,6 +94,16 @@ struct chunk_hdr {
     uint16_t size;
 };
 
+struct chunk_u32 {
+    struct chunk_hdr hdr;
+    uint32_t val;
+};
+
+struct chunk_u32arr {
+    struct chunk_hdr hdr;
+    uint32_t arr[];
+};
+
 struct chunk {
     uint8_t id;
     uint8_t type;
@@ -112,22 +126,23 @@ struct pack {
 // clang-format off
 static struct pack_whoami {
     struct header header;
-		struct chunk_hdr chunk;
-    uint32_t device_type;
+    struct chunk_u32 device_type;
     crc16_t crc;
 } pack_whoami = {
     .header = {
         .protocol = AURA_PROTOCOL,
-				.uid_dest = AURA_PC_ID,
-				.cmd = CMD_ANS_WHOAMI,
-				.data_sz = 8,
+        .uid_dest = AURA_PC_ID,
+        .cmd = CMD_ANS_WHOAMI,
+        .data_sz = sizeof(struct chunk_u32),
     },
-    .chunk = {
-        .id = CHUNK_ID_TYPE,
-        .type = CHUNK_TYPE_U32,
-        .size = 4,        
+    .device_type = {
+        .hdr = {
+            .id = CHUNK_ID_TYPE,
+            .type = CHUNK_TYPE_U32,
+            .size = sizeof(uint32_t),
+        },
+        .val = DEVICE_TYPE_EXPANDER,
     },
-		.device_type = DEVICE_TYPE_EXPANDER,
 };
 
 // clang-format on
@@ -158,7 +173,6 @@ static void cmd_work_master()
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
                            + sizeof(crc16_t);
-        crc16_add2pack(p, pack_size);
         for (uint32_t i = 1; i < UART_COUNT; i++) {
             uart_send_array(&uarts[i], p, pack_size);
         }
@@ -166,10 +180,12 @@ static void cmd_work_master()
 
     switch (p->header.cmd) {
     case CMD_REQ_WHOAMI: {
-        pack_whoami.header.cnt = p->header.cnt;
         struct pack_whoami *pnt = &pack_whoami;
-        crc16_add2pack(pnt, 30);
-        fifo_push(&send_fifo, pnt, 30);
+        pnt->header.cnt++;
+        pnt->header.uid_dest = p->header.uid_src;
+        // TODO почему был размер 30, если размер пакета 32
+        crc16_add2pack(pnt, sizeof(struct pack_whoami));
+        fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
     } break;
     case CMD_REQ_DATA: {
         // TODO send state of relays & wet sensors
@@ -192,53 +208,76 @@ static void cmd_work_slave(uint32_t num)
     switch (p->header.cmd) {
     case CMD_ANS_WHOAMI: {
         // adding new chunk
-        uint32_t uid = pack_whoami.header.uid_src;
-        uint32_t uid_size = sizeof(uid);
-
-        struct chunk *c = p->data.chunk;
-        device_ids[num] = p->header.uid_src;
-
-        uint32_t bias = c->size;
-        c += bias; // adding bias of first pack
-
-        if (c->id == CHUNK_ID_UIDS) {
-            p->header.data_sz += uid_size;
-            uint32_t pack_size = sizeof(struct header)
-                               + AURA_CHUNK_HDR_SIZE
-                               + bias;
-            fifo_push(&send_fifo, p, pack_size);
-
-            pack_size = AURA_CHUNK_HDR_SIZE
-                      + c->size;
-            fifo_push(&send_fifo, c, pack_size);
+        // uint32_t uid = pack_whoami.header.uid_src;
+        dict_add(map, p->header.uid_src, num);
+        struct chunk_u32 *c = (struct chunk_u32 *)&p->data;
+        c++;
+        if (p->header.data_sz == sizeof(struct chunk_u32)) {
+            p->header.data_sz += sizeof(struct chunk_u32);
+            c->hdr.id = CHUNK_ID_UIDS;
+            c->hdr.type = CHUNK_TYPE_ARR_U32,
+            c->hdr.size = sizeof(struct chunk_u32);
+            c->val = pack_whoami.header.uid_src;
         } else {
-            p->header.data_sz += AURA_CHUNK_HDR_SIZE + uid_size;
-            uint32_t pack_size = sizeof(struct header)
-                               + AURA_CHUNK_HDR_SIZE
-                               + bias;
-            fifo_push(&send_fifo, p, pack_size);
-
-            struct chunk new_c = {0};
-
-            new_c.id = CHUNK_ID_UIDS;
-            new_c.type = CHUNK_TYPE_ARR_U32;
-            new_c.size = uid_size;
-            fifo_push(&send_fifo, &new_c, AURA_CHUNK_HDR_SIZE);
+            p->header.data_sz += sizeof(uint32_t);
+            struct chunk_u32arr *c_arr = (struct chunk_u32arr *)c;
+            uint32_t uids_count = c->hdr.size / sizeof(uint32_t);
+            c->hdr.size += sizeof(uint32_t);
+            c_arr->arr[uids_count] = pack_whoami.header.uid_src;
         }
-        fifo_push(&send_fifo, &uid, uid_size);
+        uint32_t pack_size = sizeof(struct header)
+                           + p->header.data_sz
+                           + sizeof(crc16_t);
+        crc16_add2pack(p, pack_size);
+        fifo_push(&send_fifo, p, pack_size);
 
-        struct pack *p_to_crc = (struct pack *)fifo_get_ptail(&send_fifo);
-        uint16_t crc = crc16_calc(p_to_crc, sizeof(struct header)
-                                                + p_to_crc->header.data_sz);
-        // pushing crc into fifo
-        fifo_push(&send_fifo, &crc, sizeof(crc16_t));
+        // uint32_t uid_size = sizeof(uid);
+
+        // struct chunk *c = p->data.chunk;
+        // device_ids[num] = p->header.uid_src;
+
+        // uint32_t bias = c->size;
+        // c += bias; // adding bias of first pack
+
+        // if (c->id == CHUNK_ID_UIDS) {
+        //     p->header.data_sz += uid_size;
+        //     uint32_t pack_size = sizeof(struct header)
+        //                        + AURA_CHUNK_HDR_SIZE
+        //                        + bias;
+        //     fifo_push(&send_fifo, p, pack_size);
+
+        //     pack_size = AURA_CHUNK_HDR_SIZE
+        //               + c->size;
+        //     fifo_push(&send_fifo, c, pack_size);
+        // } else {
+        //     p->header.data_sz += AURA_CHUNK_HDR_SIZE + uid_size;
+        //     uint32_t pack_size = sizeof(struct header)
+        //                        + AURA_CHUNK_HDR_SIZE
+        //                        + bias;
+        //     fifo_push(&send_fifo, p, pack_size);
+
+        //     struct chunk new_c = {0};
+
+        //     new_c.id = CHUNK_ID_UIDS;
+        //     new_c.type = CHUNK_TYPE_ARR_U32;
+        //     new_c.size = uid_size;
+        //     fifo_push(&send_fifo, &new_c, AURA_CHUNK_HDR_SIZE);
+        // }
+        // fifo_push(&send_fifo, &uid, uid_size);
+
+        // struct pack *p_to_crc = (struct pack *)fifo_get_ptail(&send_fifo);
+        // uint16_t crc = crc16_calc(p_to_crc, sizeof(struct header)
+        //                                         + p_to_crc->header.data_sz);
+        // // pushing crc into fifo
+        // fifo_push(&send_fifo, &crc, sizeof(crc16_t));
     } break;
     default: {
         // pushing hdr into fifo
         uint32_t pack_size = sizeof(struct header)
-                           + p->header.data_sz;
+                           + p->header.data_sz
+                           + sizeof(crc16_t);
         fifo_push(&send_fifo, p, pack_size);
-        fifo_push(&send_fifo, &p->crc, sizeof(crc16_t));
+        // fifo_push(&send_fifo, &p->crc, sizeof(crc16_t));
     } break;
     }
     aura_flags_pack_received[num] = 0;
@@ -281,39 +320,21 @@ void aura_init(void)
 void uart_recv_complete_callback(struct uart *u)
 {
     uint32_t num = u->num;
-    static uint32_t chunk_cnt[UART_COUNT] = {0};
-    static uint32_t byte_cnt[UART_COUNT] = {0};
-
     enum state_recv *s = &states_recv[num];
     struct pack *p = &packs[num];
-    uint32_t *cc = &chunk_cnt[num];
-    uint32_t *bc = &byte_cnt[num];
 
     switch (*s) {
     case STATE_RECV_START: {
-        *cc = 0;
-        *bc = 0;
-        if (p->header.data_sz) {
-            // receiving data
-            *s = STATE_RECV_DATA;
-            uart_recv_array(u, p->data.raw_data, p->header.data_sz);
-        } else {
-            // receiving crc
-            *s = STATE_RECV_CRC;
-            uart_recv_array(u, &p->crc, 2);
-        }
-
-    } break;
-    case STATE_RECV_DATA: {
-        *s = STATE_RECV_CRC;
-        uart_recv_array(u, &p->crc, 2);
+        *s = STATE_RECV_HEADER;
+        uart_recv_array(u,
+                        p->data.raw_data,
+                        p->header.data_sz + sizeof(crc16_t));
     } break;
     case STATE_RECV_CRC: {
         uint32_t pack_size = sizeof(struct header)
-                           + p->header.data_sz;
-
-        uint16_t calc_crc = crc16_calc(p, pack_size);
-        if (p->crc == calc_crc) {
+                           + p->header.data_sz
+                           + sizeof(crc16_t);
+        if (crc16_is_valid(p->crc, pack_size)) {
             aura_flags_pack_received[num] = 1;
         }
         aura_recv_package(num);
