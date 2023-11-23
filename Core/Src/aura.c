@@ -192,50 +192,38 @@ static void send_resp_data()
         return;
     }
 		// taking data from fifo
-		// takigng header
     struct pack *p = (struct pack *)fifo_get_ptail(&send_fifo);
-		fifo_inc_tail(&send_fifo, sizeof(struct header));
-		//taking chunks from fifo
-		uint32_t data_sz = p->header.data_sz;
-		uint32_t cnt = 0;
-		while(data_sz)
-		{
-			struct chunk *c = (struct chunk *)fifo_get_ptail(&send_fifo);
-			memcpy_u8(c,&p->chunk[cnt++], AURA_CHUNK_HDR_SIZE + c->size);
-			data_sz -= AURA_CHUNK_HDR_SIZE + c->size;
-			fifo_inc_tail(&send_fifo, AURA_CHUNK_HDR_SIZE + c->size);
-		}
 			
     uint32_t pack_size = sizeof(struct header)
                        + p->header.data_sz
                        + sizeof(crc16_t);
-		
-    if ((p->header.uid_src != pack_whoami.header.uid_src)
-        && (p->header.cmd == CMD_ANS_WHOAMI)) {
-				// check amounts of chunks
-				uint32_t sens_id_sz = AURA_CHUNK_HDR_SIZE + p->chunk[0].size;
-				if (p->header.data_sz > sens_id_sz)
-				{
-					//create new chunk
-					struct chunk *nc = &p->chunk[1];
-					nc->id = CHUNK_ID_UIDS;
-					nc->type = CHUNK_TYPE_ARR_U32;
-					nc->size = 4;
-					memcpy_u8(&uid, nc->data, nc->size);
-					
-					p->header.data_sz += nc->size;
-				}
-				else
-				{
-					//add uid to second chunk
-					uint32_t bias = p->header.data_sz - AURA_CHUNK_HDR_SIZE;
-					memcpy_u8(&uid, (&p->chunk[1].data + bias), 4);
-					
-					p->header.data_sz += 4;
-				}
-				//calculate crc
-				crc16_add2pack(p, pack_size);
-    }
+		fifo_inc_tail(&send_fifo, pack_size);
+//    if ((p->header.uid_src != pack_whoami.header.uid_src)
+//        && (p->header.cmd == CMD_ANS_WHOAMI)) {
+//				// check amounts of chunks
+//				uint32_t sens_id_sz = AURA_CHUNK_HDR_SIZE + p->chunk[0].size;
+//				if (p->header.data_sz > sens_id_sz)
+//				{
+//					//create new chunk
+//					struct chunk *nc = &p->chunk[1];
+//					nc->id = CHUNK_ID_UIDS;
+//					nc->type = CHUNK_TYPE_ARR_U32;
+//					nc->size = 4;
+//					memcpy_u8(&uid, nc->data, nc->size);
+//					
+//					p->header.data_sz += nc->size;
+//				}
+//				else
+//				{
+//					//add uid to second chunk
+//					uint32_t bias = p->header.data_sz - AURA_CHUNK_HDR_SIZE;
+//					memcpy_u8(&uid, (&p->chunk[1].data + bias), 4);
+//					
+//					p->header.data_sz += 4;
+//				}
+//				//calculate crc
+//				crc16_add2pack(p, pack_size);
+//    }
     uart_send_array(&uarts[0], p, pack_size);
 }
 
