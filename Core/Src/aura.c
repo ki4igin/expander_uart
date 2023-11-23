@@ -167,15 +167,26 @@ static void cmd_work_master()
     if (aura_flags_pack_received[0] == 0) {
         return;
     }
+    aura_flags_pack_received[0] = 0;
 
     struct pack *p = &packs[0];
+    uint32_t pack_size = sizeof(struct header)
+                       + p->header.data_sz
+                       + sizeof(crc16_t);
     if (p->header.uid_dest == 0) {
-        uint32_t pack_size = sizeof(struct header)
-                           + p->header.data_sz
-                           + sizeof(crc16_t);
         for (uint32_t i = 1; i < UART_COUNT; i++) {
             uart_send_array(&uarts[i], p, pack_size);
         }
+    } else {
+        uint32_t idx = dict_get_idx(map, p->header.uid_dest);
+        if (idx != -1U) {
+            uint32_t uart_num = map->kvs[idx].value;
+            uart_send_array(&uarts[uart_num], p, pack_size);
+        }
+    }
+    if ((p->header.uid_dest != 0)
+        && (p->header.uid_dest != pack_whoami.header.uid_src)) {
+        return;
     }
 
     switch (p->header.cmd) {
@@ -194,7 +205,6 @@ static void cmd_work_master()
     default: {
     } break;
     }
-    aura_flags_pack_received[0] = 0;
 }
 
 static void cmd_work_slave(uint32_t num)
