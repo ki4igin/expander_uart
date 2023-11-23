@@ -170,6 +170,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>uarts</ItemText>
         </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>aura_flags_pack_received</ItemText>
+        </Ww>
       </WatchWindow1>
       <Tracepoint>
         <THDelay>0</THDelay>
