@@ -1,7 +1,15 @@
 #include "main.h"
 #include "stm32f4xx_it.h"
 #include "usart_ex.h"
+#include "gpio.h"
 
+static inline void LED_blink_red()
+{
+	LL_GPIO_SetOutputPin(GPIO_LED, GPIO_PIN_LED_RED);
+	LL_mDelay(500);
+	LL_GPIO_ResetOutputPin(GPIO_LED, GPIO_PIN_LED_RED);
+	LL_mDelay(500);
+}
 /* External variables --------------------------------------------------------*/
 
 /******************************************************************************/
@@ -13,6 +21,7 @@
 void NMI_Handler(void)
 {
     while (1) {
+			LED_blink_red();
     }
 }
 
@@ -22,6 +31,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
     while (1) {
+			LED_blink_red();
     }
 }
 
@@ -31,6 +41,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
     while (1) {
+			LED_blink_red();
     }
 }
 
@@ -40,6 +51,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
     while (1) {
+			LED_blink_red();
     }
 }
 
@@ -49,6 +61,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
     while (1) {
+			LED_blink_red();
     }
 }
 
