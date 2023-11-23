@@ -12,3 +12,7 @@
 #define ADC_CHANNEL_SENS8	LL_ADC_CHANNEL7
 
 #define ADC_CHANNEL_UBAT	LL_ADC_CHANNEL8
+
+void adc_meas(uint16_t *dest);
+float adc_convert_to_voltage(uint16_t v);
+	

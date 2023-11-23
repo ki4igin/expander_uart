@@ -19,6 +19,5 @@ void USART6_IRQHandler(void);
 void UART7_IRQHandler(void);
 void UART8_IRQHandler(void);
 void UART9_IRQHandler(void);
-void ADC_IRQHandler(void);
 
 #endif /* __STM32F4xx_IT_H */
