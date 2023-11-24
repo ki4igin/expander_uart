@@ -9,6 +9,7 @@
 #include "gpio.h"
 
 #define AURA_PROTOCOL               0x41525541U
+#define AURA_PC_ID                  0x00000000U
 #define AURA_MAX_REPEATERS          2
 #define AURA_EXPANDER_ID            8
 #define AURA_MAX_DATA_SIZE          128
@@ -21,7 +22,6 @@
 #define AURA_RELAY_CNT              2
 
 static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
-static dict_declare(map, 8 * 8);
 
 #define map ((struct dict *)map_buf)
 
