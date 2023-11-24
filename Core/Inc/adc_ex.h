@@ -13,6 +13,20 @@
 
 #define ADC_CHANNEL_UBAT	LL_ADC_CHANNEL8
 
-void adc_meas(uint16_t *dest);
+#define ADC_CH_CNT 9
+
+enum ADC_CH{
+    ADC_CH_SENS1 = 0,
+    ADC_CH_SENS2,
+    ADC_CH_SENS3,
+    ADC_CH_SENS4,
+    ADC_CH_SENS5,
+    ADC_CH_SENS6,
+    ADC_CH_SENS7,
+    ADC_CH_SENS8,
+    ADC_CH_BAT
+};
+void adc_meas(int16_t *dest);
+uint16_t adc_get_sens_state(int16_t *src);
 float adc_convert_to_voltage(uint16_t v);
 	

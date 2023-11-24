@@ -5,6 +5,8 @@
 #include "usart_ex.h"
 #include "fifo.h"
 #include "dict.h"
+#include "adc_ex.h"
+#include "gpio.h"
 
 #define AURA_PROTOCOL               0x41525541U
 #define AURA_PC_ID                  0x00000000U
@@ -18,6 +20,9 @@
 #define AURA_HDR_SIZE               20
 
 #define AURA_MAX_DEVICES            8
+
+#define AURA_SENS_CNT               8
+#define AURA_RELAY_CNT              2
 
 static dict_declare(map, 8 * 8);
 #define map ((struct dict *)map_buf)
@@ -58,7 +63,7 @@ enum cmd {
     CMD_REQ_WRITE = 5,
     CMD_ANS_WRITE = 6,
     CMD_REQ_READ = 7,
-    CMD_AND_READ = 8,
+    CMD_ANS_READ = 8,
 };
 
 enum chunk_id {
@@ -69,6 +74,7 @@ enum chunk_id {
     CHUNK_ID_HUM = 5,
     CHUNK_ID_PRESS = 6,
     CHUNK_ID_WETSENS = 7,
+    CHUNK_ID_VOLT = 8,
 };
 
 enum device_type {
@@ -106,6 +112,16 @@ struct chunk_u32 {
 struct chunk_u32arr {
     struct chunk_hdr hdr;
     uint32_t arr[];
+};
+
+struct chunk_f32 {
+    struct chunk_hdr hdr;
+    float val;
+};
+
+struct chunk_u16 {
+    struct chunk_hdr hdr;
+    uint16_t val;
 };
 
 struct chunk {
@@ -149,6 +165,50 @@ static struct __PACKED pack_whoami {
     },
 };
 
+static struct __PACKED pack_state {
+    struct header header;
+    struct chunk_u16 sensors;
+    struct chunk_f32 battery;
+    struct chunk_u16 relays[2];
+    crc16_t crc;
+} pack_state = {
+    .header = {
+        .protocol = AURA_PROTOCOL,
+        .uid_dest = AURA_PC_ID,
+        .cmd = CMD_ANS_DATA,
+        .data_sz = sizeof(struct chunk_u16) 
+                + sizeof(struct chunk_f32) 
+                + sizeof(struct chunk_u16),
+    },
+    .sensors = {
+        .hdr = {
+            .id = CHUNK_ID_WETSENS,
+            .type = CHUNK_TYPE_U16,
+            .size = sizeof(uint16_t),
+        },
+    },
+    .battery = {
+        .hdr = {
+            .id = CHUNK_ID_VOLT,
+            .type = CHUNK_TYPE_F32,
+            .size = sizeof(float),
+        },
+    },
+    .relays[0] = {
+        .hdr = {
+            .id = CHUNK_ID_ONOFF,
+            .type = CHUNK_TYPE_ARR_U16,
+            .size = sizeof(uint16_t),
+        },
+    },
+    .relays[1] = {
+        .hdr = {
+            .id = CHUNK_ID_ONOFF,
+            .type = CHUNK_TYPE_ARR_U16,
+            .size = sizeof(uint16_t),
+        },
+    },
+};
 // clang-format on
 
 static uint32_t uid = 0;
@@ -164,6 +224,31 @@ static void aura_recv_package(uint32_t num)
     struct uart *u = &uarts[num];
     struct pack *p = &packs[num];
     uart_recv_array(u, p, sizeof(struct header));
+}
+
+inline static uint32_t relay_is_open(uint32_t num)
+{
+    switch(num)
+    {
+        case RELAY_1:
+            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_1);
+        case RELAY_2:
+            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_2);
+    };
+    return 3;
+}
+
+static void upd_state()
+{
+    struct pack_state *p = &pack_state;
+    int16_t measurements[ADC_CH_CNT] = {0};
+    adc_meas(measurements);
+    
+    p->battery.val = adc_convert_to_voltage(measurements[ADC_CH_BAT]);
+    p->sensors.val = adc_get_sens_state(measurements);
+    
+    p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
+    p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
 }
 
 static void cmd_work_master()
@@ -203,6 +288,11 @@ static void cmd_work_master()
     } break;
     case CMD_REQ_DATA: {
         // TODO send state of relays & wet sensors
+        struct pack_state *pnt = &pack_state;
+        pnt->header.cnt++;
+        pnt->header.uid_dest = p->header.uid_src;
+        crc16_add2pack(pnt, sizeof(struct pack_state));
+        fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
 
     } break;
     default: {
@@ -316,6 +406,7 @@ static void send_resp_data()
 
 void aura_process(void)
 {
+    upd_state();
     cmd_work_master();
     for (uint32_t i = 1; i < UART_COUNT; i++) {
         cmd_work_slave(i);
