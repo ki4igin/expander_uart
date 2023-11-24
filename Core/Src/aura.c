@@ -9,13 +9,9 @@
 #include "gpio.h"
 
 #define AURA_PROTOCOL               0x41525541U
-#define AURA_PC_ID                  0x00000000U
-#define AURA_MAX_REPEATERS          4
+#define AURA_MAX_REPEATERS          2
 #define AURA_EXPANDER_ID            8
 #define AURA_MAX_DATA_SIZE          128
-#define AURA_MAX_DATA_SIZE_IN_CHUNK 16
-#define AURA_MAX_CHUNK_CNT          AURA_MAX_DATA_SIZE / AURA_MAX_DATA_SIZE_IN_CHUNK
-
 #define AURA_CHUNK_HDR_SIZE         4
 #define AURA_HDR_SIZE               20
 
@@ -24,7 +20,9 @@
 #define AURA_SENS_CNT               8
 #define AURA_RELAY_CNT              2
 
+static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
 static dict_declare(map, 8 * 8);
+
 #define map ((struct dict *)map_buf)
 
 struct fifo send_fifo;
@@ -128,18 +126,18 @@ struct chunk {
     uint8_t id;
     uint8_t type;
     uint16_t size;
-    uint8_t data[AURA_MAX_DATA_SIZE_IN_CHUNK];
+    uint8_t data[];
 };
 
 struct pack {
     struct header header;
 
-    union {
-        struct chunk chunk[AURA_MAX_CHUNK_CNT];
-        uint8_t raw_data[AURA_MAX_DATA_SIZE];
-    } data;
+    // union {
+    //     struct chunk chunk[AURA_MAX_CHUNK_CNT];
+    //     uint8_t raw_data[AURA_MAX_DATA_SIZE];
+    // } data;
 
-    // uint8_t data[AURA_MAX_DATA_SIZE];
+    uint8_t data[AURA_MAX_DATA_SIZE];
     crc16_t crc;
 };
 
@@ -151,7 +149,6 @@ static struct __PACKED pack_whoami {
 } pack_whoami = {
     .header = {
         .protocol = AURA_PROTOCOL,
-        .uid_dest = AURA_PC_ID,
         .cmd = CMD_ANS_WHOAMI,
         .data_sz = sizeof(struct chunk_u32),
     },
@@ -211,12 +208,10 @@ static struct __PACKED pack_state {
 };
 // clang-format on
 
-static uint32_t uid = 0;
-static uint32_t device_ids[AURA_MAX_DEVICES] = {0};
-
 static enum state_recv states_recv[UART_COUNT] = {0};
 static struct pack packs[UART_COUNT] __ALIGNED(8);
 static uint32_t aura_flags_pack_received[UART_COUNT] = {0};
+static uint32_t cnt_send_pack = 0;
 
 static void aura_recv_package(uint32_t num)
 {
@@ -280,8 +275,9 @@ static void cmd_work_master()
 
     switch (p->header.cmd) {
     case CMD_REQ_WHOAMI: {
+        dict_clear(map);
         struct pack_whoami *pnt = &pack_whoami;
-        pnt->header.cnt++;
+        pnt->header.cnt = cnt_send_pack++;
         pnt->header.uid_dest = p->header.uid_src;
         crc16_add2pack(pnt, sizeof(struct pack_whoami));
         fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
@@ -416,8 +412,7 @@ void aura_process(void)
 
 void aura_init(void)
 {
-    uid = uid_hash();
-    pack_whoami.header.uid_src = uid;
+    pack_whoami.header.uid_src = uid_hash();
     aura_recv_package(0);
 }
 
@@ -431,7 +426,7 @@ void uart_recv_complete_callback(struct uart *u)
     case STATE_RECV_START: {
         *s = STATE_RECV_HEADER;
         uart_recv_array(u,
-                        p->data.raw_data,
+                        p->data,
                         p->header.data_sz + sizeof(crc16_t));
     } break;
     case STATE_RECV_HEADER: {
