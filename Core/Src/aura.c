@@ -47,7 +47,7 @@ enum chunk_type {
     CHUNK_TYPE_ARR_I32 = 14,
     CHUNK_TYPE_ARR_U32 = 15,
     CHUNK_TYPE_ARR_F32 = 16,
-		CHUNK_TYPE_ARR_F64 = 17,
+    CHUNK_TYPE_ARR_F64 = 17,
 };
 
 enum cmd {
@@ -55,10 +55,10 @@ enum cmd {
     CMD_ANS_WHOAMI = 2,
     CMD_REQ_DATA = 3,
     CMD_ANS_DATA = 4,
-		CMD_REQ_WRITE = 5,
-		CMD_ANS_WRITE = 6,
-		CMD_REQ_READ = 7,
-		CMD_AND_READ = 8,
+    CMD_REQ_WRITE = 5,
+    CMD_ANS_WRITE = 6,
+    CMD_REQ_READ = 7,
+    CMD_AND_READ = 8,
 };
 
 enum chunk_id {
