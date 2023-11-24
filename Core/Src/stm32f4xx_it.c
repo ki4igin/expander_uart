@@ -127,12 +127,6 @@ void ADC_IRQHandler(void)
     LL_ADC_ClearFlag_OVR(ADC1);
     LED_blink_red();
   }
-  
-  if(LL_ADC_IsActiveFlag_EOCS(ADC1))
-  {
-    /* Clear flag ADC group regular end of sequence conversions */
-    LL_ADC_ClearFlag_EOCS(ADC1);
-  }
 }
 
 void DMA2_Stream0_IRQHandler(void)

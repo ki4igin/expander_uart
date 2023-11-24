@@ -7,6 +7,7 @@
 #include "dict.h"
 #include "adc_ex.h"
 #include "gpio.h"
+#include "relay.h"
 
 #define AURA_PROTOCOL               0x41525541U
 #define AURA_PC_ID                  0x00000000U
@@ -68,10 +69,10 @@ enum cmd {
 enum chunk_id {
     CHUNK_ID_TYPE = 1,
     CHUNK_ID_UIDS = 2,
-    CHUNK_ID_ONOFF = 3,
-    CHUNK_ID_TEMP = 4,
-    CHUNK_ID_HUM = 5,
-    CHUNK_ID_PRESS = 6,
+    CHUNK_ID_OPEN_REL = 3,
+    CHUNK_ID_CLOSE_REL = 4,
+    CHUNK_ID_ONOFF_REL1 = 5,
+    CHUNK_ID_ONOFF_REL2 = 6,
     CHUNK_ID_WETSENS = 7,
     CHUNK_ID_VOLT = 8,
 };
@@ -194,14 +195,41 @@ static struct __PACKED pack_state {
     },
     .relays[0] = {
         .hdr = {
-            .id = CHUNK_ID_ONOFF,
+            .id = CHUNK_ID_ONOFF_REL1,
             .type = CHUNK_TYPE_U16,
             .size = sizeof(uint16_t),
         },
     },
     .relays[1] = {
         .hdr = {
-            .id = CHUNK_ID_ONOFF,
+            .id = CHUNK_ID_ONOFF_REL2,
+            .type = CHUNK_TYPE_U16,
+            .size = sizeof(uint16_t),
+        },
+    },
+};
+
+static struct __PACKED pack_relay {
+    struct header header;
+    struct chunk_u16 relays[2];
+    crc16_t crc;
+} pack_relay = {
+    .header = {
+        .protocol = AURA_PROTOCOL,
+        .uid_dest = AURA_PC_ID,
+        .cmd = CMD_ANS_WRITE,
+        .data_sz = 2*sizeof(struct chunk_u16),
+    },
+    .relays[0] = {
+        .hdr = {
+            .id = CHUNK_ID_ONOFF_REL1,
+            .type = CHUNK_TYPE_U16,
+            .size = sizeof(uint16_t),
+        },
+    },
+    .relays[1] = {
+        .hdr = {
+            .id = CHUNK_ID_ONOFF_REL2,
             .type = CHUNK_TYPE_U16,
             .size = sizeof(uint16_t),
         },
@@ -222,29 +250,49 @@ static void aura_recv_package(uint32_t num)
     uart_recv_array(u, p, sizeof(struct header));
 }
 
-inline static uint32_t relay_is_open(uint32_t num)
-{
-    switch(num)
-    {
-        case RELAY_1:
-            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_1);
-        case RELAY_2:
-            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_2);
-    };
-    return 3;
-}
 
 static void upd_state()
-{
-    struct pack_state *p = &pack_state;
-    
+{   
     if (LL_ADC_IsEnabled(ADC1))
     {
         LL_ADC_REG_StartConversionSWStart(ADC1);
-    }
-        
+    } 
+    struct pack_state *p = &pack_state;
     p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
     p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
+}
+
+static void send_relay_state()
+{
+    struct pack_relay *p = &pack_relay;
+    
+    p->header.cnt = cnt_send_pack++;
+    p->header.uid_src = pack_whoami.header.uid_src;
+    p->header.uid_dest = packs[0].header.uid_src;
+    p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
+    p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
+    crc16_add2pack(p, sizeof(struct pack_relay));
+    fifo_push(&send_fifo, p, sizeof(struct pack_relay));
+}
+
+static void cmd_write_data(void)
+{
+    struct pack *p = &packs[0];
+    struct chunk_u16 *c = (struct chunk_u16 *) p->data;
+    
+    switch(c->hdr.id)
+    {
+        case CHUNK_ID_OPEN_REL:{
+            relay_open(c->val);
+            send_relay_state();
+        } break;
+        case CHUNK_ID_CLOSE_REL:{
+            relay_close(c->val);
+            send_relay_state();
+        } break;
+        default:{
+        } break;
+    }
 }
 
 static void cmd_work_master()
@@ -291,6 +339,9 @@ static void cmd_work_master()
         fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
 
     } break;
+    case CMD_REQ_WRITE: {
+         cmd_write_data();
+    }break;
     default: {
     } break;
     }
@@ -303,11 +354,8 @@ static void cmd_work_slave(uint32_t num)
     }
     struct pack *p = &packs[num];
 
-    // adding new chunk
     switch (p->header.cmd) {
     case CMD_ANS_WHOAMI: {
-        // adding new chunk
-        // uint32_t uid = pack_whoami.header.uid_src;
         dict_add(map, p->header.uid_src, num);
         struct chunk_u32 *c = (struct chunk_u32 *)&p->data;
         c++;
@@ -329,54 +377,12 @@ static void cmd_work_slave(uint32_t num)
                            + sizeof(crc16_t);
         crc16_add2pack(p, pack_size);
         fifo_push(&send_fifo, p, pack_size);
-
-        // uint32_t uid_size = sizeof(uid);
-
-        // struct chunk *c = p->data.chunk;
-        // device_ids[num] = p->header.uid_src;
-
-        // uint32_t bias = c->size;
-        // c += bias; // adding bias of first pack
-
-        // if (c->id == CHUNK_ID_UIDS) {
-        //     p->header.data_sz += uid_size;
-        //     uint32_t pack_size = sizeof(struct header)
-        //                        + AURA_CHUNK_HDR_SIZE
-        //                        + bias;
-        //     fifo_push(&send_fifo, p, pack_size);
-
-        //     pack_size = AURA_CHUNK_HDR_SIZE
-        //               + c->size;
-        //     fifo_push(&send_fifo, c, pack_size);
-        // } else {
-        //     p->header.data_sz += AURA_CHUNK_HDR_SIZE + uid_size;
-        //     uint32_t pack_size = sizeof(struct header)
-        //                        + AURA_CHUNK_HDR_SIZE
-        //                        + bias;
-        //     fifo_push(&send_fifo, p, pack_size);
-
-        //     struct chunk new_c = {0};
-
-        //     new_c.id = CHUNK_ID_UIDS;
-        //     new_c.type = CHUNK_TYPE_ARR_U32;
-        //     new_c.size = uid_size;
-        //     fifo_push(&send_fifo, &new_c, AURA_CHUNK_HDR_SIZE);
-        // }
-        // fifo_push(&send_fifo, &uid, uid_size);
-
-        // struct pack *p_to_crc = (struct pack *)fifo_get_ptail(&send_fifo);
-        // uint16_t crc = crc16_calc(p_to_crc, sizeof(struct header)
-        //                                         + p_to_crc->header.data_sz);
-        // // pushing crc into fifo
-        // fifo_push(&send_fifo, &crc, sizeof(crc16_t));
     } break;
     default: {
-        // pushing hdr into fifo
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
                            + sizeof(crc16_t);
         fifo_push(&send_fifo, p, pack_size);
-        // fifo_push(&send_fifo, &p->crc, sizeof(crc16_t));
     } break;
     }
     aura_flags_pack_received[num] = 0;
@@ -432,6 +438,10 @@ void uart_recv_complete_callback(struct uart *u)
     switch (*s) {
     case STATE_RECV_START: {
         *s = STATE_RECV_HEADER;
+        
+        if(p->header.data_sz > AURA_MAX_DATA_SIZE) 
+            p->header.data_sz = 0;
+        
         uart_recv_array(u,
                         p->data,
                         p->header.data_sz + sizeof(crc16_t));

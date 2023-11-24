@@ -107,7 +107,6 @@ void MX_ADC1_Init(void)
     LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_9, ADC_CHANNEL_UBAT);
     LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_10, LL_ADC_SAMPLINGTIME_480CYCLES);
     
-    LL_ADC_EnableIT_EOCS(ADC1);
     LL_ADC_EnableIT_OVR(ADC1);
     
     LL_ADC_Enable(ADC1);
