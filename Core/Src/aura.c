@@ -47,6 +47,7 @@ enum chunk_type {
     CHUNK_TYPE_ARR_I32 = 14,
     CHUNK_TYPE_ARR_U32 = 15,
     CHUNK_TYPE_ARR_F32 = 16,
+		CHUNK_TYPE_ARR_F64 = 17,
 };
 
 enum cmd {
@@ -54,6 +55,10 @@ enum cmd {
     CMD_ANS_WHOAMI = 2,
     CMD_REQ_DATA = 3,
     CMD_ANS_DATA = 4,
+		CMD_REQ_WRITE = 5,
+		CMD_ANS_WRITE = 6,
+		CMD_REQ_READ = 7,
+		CMD_AND_READ = 8,
 };
 
 enum chunk_id {
@@ -123,7 +128,7 @@ struct pack {
 };
 
 // clang-format off
-static struct pack_whoami {
+static struct __PACKED pack_whoami {
     struct header header;
     struct chunk_u32 device_type;
     crc16_t crc;
@@ -193,7 +198,6 @@ static void cmd_work_master()
         struct pack_whoami *pnt = &pack_whoami;
         pnt->header.cnt++;
         pnt->header.uid_dest = p->header.uid_src;
-        // TODO почему был размер 30, если размер пакета 32
         crc16_add2pack(pnt, sizeof(struct pack_whoami));
         fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
     } break;
