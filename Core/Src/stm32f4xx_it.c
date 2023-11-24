@@ -2,6 +2,7 @@
 #include "stm32f4xx_it.h"
 #include "usart_ex.h"
 #include "gpio.h"
+#include "aura.h"
 
 static inline void LED_blink_red()
 {
@@ -117,3 +118,39 @@ declare_usart_irq_handler(UART7)
 declare_usart_irq_handler(UART8)
 declare_usart_irq_handler(UART9)
     // clang-format on
+    
+void ADC_IRQHandler(void)
+{
+  if(LL_ADC_IsActiveFlag_OVR(ADC1))
+  {
+    /* Clear flag ADC group regular overrun */
+    LL_ADC_ClearFlag_OVR(ADC1);
+    LED_blink_red();
+  }
+  
+  if(LL_ADC_IsActiveFlag_EOCS(ADC1))
+  {
+    /* Clear flag ADC group regular end of sequence conversions */
+    LL_ADC_ClearFlag_EOCS(ADC1);
+  }
+}
+
+void DMA2_Stream0_IRQHandler(void)
+{
+  /* Check whether DMA transfer complete caused the DMA interruption */
+  if(LL_DMA_IsActiveFlag_TC0(DMA2))
+  {
+    /*  Clear Stream  transfer complete flag*/
+    LL_DMA_ClearFlag_TC0(DMA2);
+    /* Call interruption treatment function */
+    aura_measure();
+  }
+  
+  /* Check whether DMA transfer error caused the DMA interruption */
+  if(LL_DMA_IsActiveFlag_TE0(DMA2))
+  {
+    LL_DMA_ClearFlag_TE0(DMA2);
+    LED_blink_red();
+  }
+}
+

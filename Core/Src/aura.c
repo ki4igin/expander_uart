@@ -26,6 +26,7 @@ static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
 #define map ((struct dict *)map_buf)
 
 struct fifo send_fifo;
+uint16_t adc_buff[ADC_CH_CNT];
 
 enum state_recv {
     STATE_RECV_START = 0,
@@ -175,7 +176,7 @@ static struct __PACKED pack_state {
         .cmd = CMD_ANS_DATA,
         .data_sz = sizeof(struct chunk_u16) 
                 + sizeof(struct chunk_f32) 
-                + sizeof(struct chunk_u16),
+                + 2*sizeof(struct chunk_u16),
     },
     .sensors = {
         .hdr = {
@@ -194,14 +195,14 @@ static struct __PACKED pack_state {
     .relays[0] = {
         .hdr = {
             .id = CHUNK_ID_ONOFF,
-            .type = CHUNK_TYPE_ARR_U16,
+            .type = CHUNK_TYPE_U16,
             .size = sizeof(uint16_t),
         },
     },
     .relays[1] = {
         .hdr = {
             .id = CHUNK_ID_ONOFF,
-            .type = CHUNK_TYPE_ARR_U16,
+            .type = CHUNK_TYPE_U16,
             .size = sizeof(uint16_t),
         },
     },
@@ -236,12 +237,12 @@ inline static uint32_t relay_is_open(uint32_t num)
 static void upd_state()
 {
     struct pack_state *p = &pack_state;
-    int16_t measurements[ADC_CH_CNT] = {0};
-    adc_meas(measurements);
     
-    p->battery.val = adc_convert_to_voltage(measurements[ADC_CH_BAT]);
-    p->sensors.val = adc_get_sens_state(measurements);
-    
+    if (LL_ADC_IsEnabled(ADC1))
+    {
+        LL_ADC_REG_StartConversionSWStart(ADC1);
+    }
+        
     p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
     p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
 }
@@ -283,9 +284,8 @@ static void cmd_work_master()
         fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
     } break;
     case CMD_REQ_DATA: {
-        // TODO send state of relays & wet sensors
         struct pack_state *pnt = &pack_state;
-        pnt->header.cnt++;
+        pnt->header.cnt = cnt_send_pack++;
         pnt->header.uid_dest = p->header.uid_src;
         crc16_add2pack(pnt, sizeof(struct pack_state));
         fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
@@ -414,6 +414,13 @@ void aura_init(void)
 {
     pack_whoami.header.uid_src = uid_hash();
     aura_recv_package(0);
+}
+
+void aura_measure(void)
+{
+    struct pack_state *p = &pack_state;
+    p->sensors.val = adc_get_sens_state(adc_buff);
+    p->battery.val = adc_get_voltage(adc_buff);
 }
 
 void uart_recv_complete_callback(struct uart *u)

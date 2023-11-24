@@ -5,5 +5,6 @@
 
 void aura_init(void);
 void aura_process(void);
+void aura_measure(void);
 
 #endif
