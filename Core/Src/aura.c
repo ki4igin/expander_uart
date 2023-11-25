@@ -27,7 +27,6 @@ static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
 #define map ((struct dict *)map_buf)
 
 struct fifo send_fifo;
-uint16_t adc_buff[ADC_CH_CNT];
 
 enum state_recv {
     STATE_RECV_START = 0,
@@ -425,8 +424,8 @@ void aura_init(void)
 void aura_measure(void)
 {
     struct pack_state *p = &pack_state;
-    p->sensors.val = adc_get_sens_state(adc_buff);
-    p->battery.val = adc_get_voltage(adc_buff);
+    p->sensors.val = adc_get_sens_state(adc_buf);
+    p->battery.val = adc_get_voltage(adc_buf);
 }
 
 void uart_recv_complete_callback(struct uart *u)
