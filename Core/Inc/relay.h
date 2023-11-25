@@ -1,3 +1,6 @@
+#ifndef __RELAY_H__
+#define __RELAY_H__
+
 #include "stm32f4xx_ll_gpio.h"
 #include "gpio.h"
 
@@ -40,3 +43,5 @@ inline static void relay_close(uint16_t num)
             break;
     };
 }
+
+#endif
