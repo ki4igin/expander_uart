@@ -152,7 +152,7 @@ void ADC_Configure_DMA(void)
     LL_DMA_ConfigAddresses(DMA2,
                            LL_DMA_STREAM_0,
                            LL_ADC_DMA_GetRegAddr(ADC1, LL_ADC_DMA_REG_REGULAR_DATA),
-                           (uint32_t)&adc_buf,
+                           (uint32_t)adc_buf,
                            LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
 
     /* Set DMA transfer size */
