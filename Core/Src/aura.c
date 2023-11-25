@@ -5,9 +5,10 @@
 #include "usart_ex.h"
 #include "fifo.h"
 #include "dict.h"
-#include "adc_ex.h"
 #include "gpio.h"
 #include "relay.h"
+#include "sens.h"
+#include "bat.h"
 
 #define AURA_PROTOCOL               0x41525541U
 #define AURA_PC_ID                  0x00000000U
@@ -424,8 +425,8 @@ void aura_init(void)
 void aura_measure(void)
 {
     struct pack_state *p = &pack_state;
-    p->sensors.val = adc_get_sens_state(adc_buf);
-    p->battery.val = adc_get_voltage(adc_buf);
+    p->sensors.val = sens_get_state();
+    p->battery.val = bat_get_voltage();
 }
 
 void uart_recv_complete_callback(struct uart *u)

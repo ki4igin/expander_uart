@@ -1,6 +1,7 @@
 #include "main.h"
 #include "stm32f4xx_it.h"
 #include "usart_ex.h"
+#include "adc_ex.h"
 #include "gpio.h"
 #include "aura.h"
 
@@ -137,7 +138,7 @@ void DMA2_Stream0_IRQHandler(void)
     /*  Clear Stream  transfer complete flag*/
     LL_DMA_ClearFlag_TC0(DMA2);
     /* Call interruption treatment function */
-    aura_measure();
+    adc_dma_irq_callback();
   }
   
   /* Check whether DMA transfer error caused the DMA interruption */
