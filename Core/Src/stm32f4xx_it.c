@@ -3,15 +3,9 @@
 #include "usart_ex.h"
 #include "adc_ex.h"
 #include "gpio.h"
+#include "gpio_ex.h"
 #include "aura.h"
 
-static inline void LED_blink_red()
-{
-	LL_GPIO_SetOutputPin(GPIO_LED, GPIO_PIN_LED_RED);
-	LL_mDelay(500);
-	LL_GPIO_ResetOutputPin(GPIO_LED, GPIO_PIN_LED_RED);
-	LL_mDelay(500);
-}
 /* External variables --------------------------------------------------------*/
 
 /******************************************************************************/
@@ -23,7 +17,7 @@ static inline void LED_blink_red()
 void NMI_Handler(void)
 {
     while (1) {
-			LED_blink_red();
+			led_blink_red();
     }
 }
 
@@ -33,7 +27,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
     while (1) {
-			LED_blink_red();
+			led_blink_red();
     }
 }
 
@@ -43,7 +37,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
     while (1) {
-			LED_blink_red();
+			led_blink_red();
     }
 }
 
@@ -53,7 +47,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
     while (1) {
-			LED_blink_red();
+			led_blink_red();
     }
 }
 
@@ -63,7 +57,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
     while (1) {
-			LED_blink_red();
+			led_blink_red();
     }
 }
 
@@ -126,7 +120,7 @@ void ADC_IRQHandler(void)
   {
     /* Clear flag ADC group regular overrun */
     LL_ADC_ClearFlag_OVR(ADC1);
-    LED_blink_red();
+    led_blink_red();
   }
 }
 
@@ -145,7 +139,7 @@ void DMA2_Stream0_IRQHandler(void)
   if(LL_DMA_IsActiveFlag_TE0(DMA2))
   {
     LL_DMA_ClearFlag_TE0(DMA2);
-    LED_blink_red();
+    led_blink_red();
   }
 }
 
