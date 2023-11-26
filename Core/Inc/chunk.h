@@ -64,7 +64,7 @@ struct chunk_f32 {
     float val;
 };
 
-static void add_chunk_u16(void **next_chunk, enum chunk_id id, uint16_t val)
+static void chunk_u16_add(void **next_chunk, enum chunk_id id, uint16_t val)
 {
     struct chunk_u16 *c = (struct chunk_u16 *)*next_chunk;
     c->hdr.id = id;
@@ -74,7 +74,7 @@ static void add_chunk_u16(void **next_chunk, enum chunk_id id, uint16_t val)
     *next_chunk = (void *)((uint32_t)*next_chunk + sizeof(*c));
 }
 
-static void add_chunk_u32(void **next_chunk, enum chunk_id id, uint32_t val)
+static void chunk_u32_add(void **next_chunk, enum chunk_id id, uint32_t val)
 {
     struct chunk_u32 *c = (struct chunk_u32 *)*next_chunk;
     c->hdr.id = id;

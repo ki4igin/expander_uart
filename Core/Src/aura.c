@@ -104,7 +104,7 @@ static void cmd_write_data(const struct pack *req, void **next_ans_chunk)
                 relay_close(relay);
             }
             uint16_t data = relay_is_open(relay) ? 0x00FF : 0x0000;
-            add_chunk_u16(next_ans_chunk, hdr->id, data);
+            chunk_u16_add(next_ans_chunk, hdr->id, data);
         } break;
         default: {
         } break;
@@ -150,15 +150,15 @@ static void cmd_work_master()
     case CMD_REQ_WHOAMI: {
         dict_clear(map);
         ans->header.cmd = CMD_ANS_WHOAMI;
-        add_chunk_u32(next_ans_chunk, CHUNK_ID_TYPE, DEVICE_TYPE_EXPANDER);
+        chunk_u32_add(next_ans_chunk, CHUNK_ID_TYPE, DEVICE_TYPE_EXPANDER);
     } break;
     case CMD_REQ_DATA: {
         ans->header.cmd = CMD_ANS_DATA;
-        add_chunk_u16(next_ans_chunk, CHUNK_ID_WETSENS, sens_get_state());
-        add_chunk_u16(next_ans_chunk, CHUNK_ID_BAT_VOLT, bat_get_voltage());
-        add_chunk_u16(next_ans_chunk, CHUNK_ID_RELAY1_STATUS,
+        chunk_u16_add(next_ans_chunk, CHUNK_ID_WETSENS, sens_get_state());
+        chunk_u16_add(next_ans_chunk, CHUNK_ID_BAT_VOLT, bat_get_voltage());
+        chunk_u16_add(next_ans_chunk, CHUNK_ID_RELAY1_STATUS,
                       relay_is_open(RELAY1) ? 0x00FF : 0x0000);
-        add_chunk_u16(next_ans_chunk, CHUNK_ID_RELAY2_STATUS,
+        chunk_u16_add(next_ans_chunk, CHUNK_ID_RELAY2_STATUS,
                       relay_is_open(RELAY2) ? 0x00FF : 0x0000);
 
     } break;
