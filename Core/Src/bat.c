@@ -2,14 +2,14 @@
 #include "adc_ex.h"
 #include "smbus_fifo.h"
 
-static float voltage;
+static uint16_t voltage;
 
-#define R1                     100e3f
-#define R2                     10e3f
-#define ADC_REF                3.3f
-#define ADC_RESOLUTION         12
+#define R1                     100000U
+#define R2                     10000U
+#define ADC_REF_mV             3300U
+#define ADC_RESOLUTION         12U
 
-#define RES_DIV                (R2 / (R1 + R2))
+#define K_RES_DIV                ((R1 + R2) / R2)
 
 #define MIN(x, y)              (((x) < (y)) ? (x) : (y))
 #define MAX(x, y)              (((x) > (y)) ? (x) : (y))
@@ -53,9 +53,9 @@ static uint16_t get_bits_val_charge_voltage(uint16_t mV)
     return (mV / CHARGE_VOLTAGE_STEP_mV) << CHARGE_VOLTAGE_Pos;
 }
 
-static float convert_adc2voltage(uint16_t adc)
+static uint16_t convert_adc2voltage(uint16_t adc)
 {
-    return adc * ADC_REF / (1 << ADC_RESOLUTION) / RES_DIV;
+    return (adc * ADC_REF_mV * K_RES_DIV) >> ADC_RESOLUTION;
 }
 
 void bat_init(void)
@@ -93,7 +93,7 @@ void bat_set_charge_voltage(uint16_t mV)
     smbus_fifo_write(SLA, CMD_CHARGE_VOLTAGE, b);
 }
 
-float bat_get_voltage(void)
+uint16_t bat_get_voltage(void)
 {
     return voltage;
 }

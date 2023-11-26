@@ -10,20 +10,20 @@
 #include "sens.h"
 #include "bat.h"
 
-#define AURA_PROTOCOL               0x41525541U
-#define AURA_PC_ID                  0x00000000U
-#define AURA_MAX_REPEATERS          2
-#define AURA_EXPANDER_ID            8
-#define AURA_MAX_DATA_SIZE          128
-#define AURA_CHUNK_HDR_SIZE         4
-#define AURA_HDR_SIZE               20
+#define AURA_PROTOCOL       0x41525541U
+#define AURA_PC_ID          0x00000000U
+#define AURA_MAX_REPEATERS  2
+#define AURA_EXPANDER_ID    8
+#define AURA_MAX_DATA_SIZE  128
+#define AURA_CHUNK_HDR_SIZE 4
+#define AURA_HDR_SIZE       20
 
-#define AURA_MAX_DEVICES            8
+#define AURA_MAX_DEVICES    8
 
-#define AURA_SENS_CNT               8
-#define AURA_RELAY_CNT              2
+#define AURA_SENS_CNT       8
+#define AURA_RELAY_CNT      2
 
-static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
+static dict_declare(map, AURA_MAX_REPEATERS *(UART_COUNT - 1));
 
 #define map ((struct dict *)map_buf)
 
@@ -31,7 +31,7 @@ struct send_fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
-    STATE_RECV_HEADER,    
+    STATE_RECV_HEADER,
 };
 
 enum chunk_type {
@@ -167,7 +167,7 @@ static struct __PACKED pack_whoami {
 static struct __PACKED pack_state {
     struct header header;
     struct chunk_u16 sensors;
-    struct chunk_f32 battery;
+    struct chunk_u16 battery;
     struct chunk_u16 relays[2];
     crc16_t crc;
 } pack_state = {
@@ -175,9 +175,9 @@ static struct __PACKED pack_state {
         .protocol = AURA_PROTOCOL,
         .uid_dest = AURA_PC_ID,
         .cmd = CMD_ANS_DATA,
-        .data_sz = sizeof(struct chunk_u16) 
-                + sizeof(struct chunk_f32) 
-                + 2*sizeof(struct chunk_u16),
+        .data_sz = sizeof(struct pack_state) 
+                 - sizeof(struct header) 
+                 - sizeof(crc16_t),
     },
     .sensors = {
         .hdr = {
@@ -189,8 +189,8 @@ static struct __PACKED pack_state {
     .battery = {
         .hdr = {
             .id = CHUNK_ID_VOLT,
-            .type = CHUNK_TYPE_F32,
-            .size = sizeof(float),
+            .type = CHUNK_TYPE_U16,
+            .size = sizeof(uint16_t),
         },
     },
     .relays[0] = {
@@ -235,6 +235,7 @@ static struct __PACKED pack_relay {
         },
     },
 };
+
 // clang-format on
 
 static enum state_recv states_recv[UART_COUNT] = {0};
@@ -250,13 +251,11 @@ static void aura_recv_package(uint32_t num)
     uart_recv_array(u, p, sizeof(struct header));
 }
 
-
 static void upd_state()
-{   
-    if (LL_ADC_IsEnabled(ADC1))
-    {
+{
+    if (LL_ADC_IsEnabled(ADC1)) {
         LL_ADC_REG_StartConversionSWStart(ADC1);
-    } 
+    }
     struct pack_state *p = &pack_state;
     p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
     p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
@@ -265,7 +264,7 @@ static void upd_state()
 static void send_relay_state()
 {
     struct pack_relay *p = &pack_relay;
-    
+
     p->header.cnt = cnt_send_pack++;
     p->header.uid_src = pack_whoami.header.uid_src;
     p->header.uid_dest = packs[0].header.uid_src;
@@ -278,20 +277,19 @@ static void send_relay_state()
 static void cmd_write_data(void)
 {
     struct pack *p = &packs[0];
-    struct chunk_u16 *c = (struct chunk_u16 *) p->data;
-    
-    switch(c->hdr.id)
-    {
-        case CHUNK_ID_OPEN_REL:{
-            relay_open(c->val);
-            send_relay_state();
-        } break;
-        case CHUNK_ID_CLOSE_REL:{
-            relay_close(c->val);
-            send_relay_state();
-        } break;
-        default:{
-        } break;
+    struct chunk_u16 *c = (struct chunk_u16 *)p->data;
+
+    switch (c->hdr.id) {
+    case CHUNK_ID_OPEN_REL: {
+        relay_open(c->val);
+        send_relay_state();
+    } break;
+    case CHUNK_ID_CLOSE_REL: {
+        relay_close(c->val);
+        send_relay_state();
+    } break;
+    default: {
+    } break;
     }
 }
 
@@ -340,8 +338,8 @@ static void cmd_work_master()
 
     } break;
     case CMD_REQ_WRITE: {
-         cmd_write_data();
-    }break;
+        cmd_write_data();
+    } break;
     default: {
     } break;
     }
@@ -438,10 +436,11 @@ void uart_recv_complete_callback(struct uart *u)
     switch (*s) {
     case STATE_RECV_START: {
         *s = STATE_RECV_HEADER;
-        
-        if(p->header.data_sz > AURA_MAX_DATA_SIZE) 
+
+        if (p->header.data_sz > AURA_MAX_DATA_SIZE) {
             p->header.data_sz = 0;
-        
+        }
+
         uart_recv_array(u,
                         p->data,
                         p->header.data_sz + sizeof(crc16_t));

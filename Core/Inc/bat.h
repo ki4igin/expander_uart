@@ -8,6 +8,6 @@ void bat_set_charge_current(uint16_t mA);
 void bat_set_input_current(uint16_t mA);
 void bat_set_charge_voltage(uint16_t mV);
 
-float bat_get_voltage(void);
+uint16_t bat_get_voltage(void);
 
 #endif
