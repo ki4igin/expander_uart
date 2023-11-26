@@ -570,6 +570,11 @@
               <FileType>1</FileType>
               <FilePath>..\Core\Src\smbus.c</FilePath>
             </File>
+            <File>
+              <FileName>smbus_fifo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\smbus_fifo.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

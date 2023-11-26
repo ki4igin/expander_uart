@@ -3,9 +3,7 @@
 #include "stm32f4xx_ll_i2c.h"
 #include "stack.h"
 
-#define I2C        I2C1
-#define slaw(_sla) ((_sla) << 1)
-#define slar(_sla) (((_sla) << 1) | 0x01)
+#define I2C I2C1
 
 stack_declare(sm, 5);
 #define stack ((struct stack *)sm_stack)
@@ -17,37 +15,28 @@ static void wr_func_start(uint16_t data)
     stack_push(stack, data & 0xFF);
 }
 
-static void wr_func_end(uint8_t sla, uint8_t cmd)
+static void wr_func_end(uint8_t slaw, uint8_t cmd)
 {
     stack_push(stack, cmd);
-    stack_push(stack, slaw(sla));
+    stack_push(stack, slaw);
     LL_I2C_GenerateStartCondition(I2C);
 }
 
-void smbus_write(uint8_t sla, uint8_t cmd, uint16_t data)
+void smbus_write(uint8_t slaw, uint8_t cmd, uint16_t data)
 {
     wr_func_start(data);
-    wr_func_end(sla, cmd);
+    wr_func_end(slaw, cmd);
 }
 
-void smbus_read(uint8_t sla, uint8_t cmd)
+void smbus_read(uint8_t slar, uint8_t cmd)
 {
     wr_func_start(0);
-    stack_push(stack, slar(sla));
-    wr_func_end(sla, cmd);
+    stack_push(stack, slar);
+    uint8_t slaw = slar & 0xFE;
+    wr_func_end(slaw, cmd);
 }
 
 void I2C1_EV_IRQHandler(void)
-{
-    if (LL_I2C_IsActiveSMBusFlag_TIMEOUT(I2C)) {
-        LL_I2C_ClearSMBusFlag_TIMEOUT(I2C);
-    }
-}
-
-/**
- * @brief This function handles I2C1 error interrupt.
- */
-void I2C1_ER_IRQHandler(void)
 {
     if (LL_I2C_IsActiveFlag_SB(I2C)) {
         LL_I2C_TransmitData8(I2C, stack_pop(stack));
@@ -78,6 +67,16 @@ void I2C1_ER_IRQHandler(void)
 stop:
             LL_I2C_GenerateStopCondition(I2C);
         }
+    }
+}
+
+/**
+ * @brief This function handles I2C1 error interrupt.
+ */
+void I2C1_ER_IRQHandler(void)
+{
+    if (LL_I2C_IsActiveSMBusFlag_TIMEOUT(I2C)) {
+        LL_I2C_ClearSMBusFlag_TIMEOUT(I2C);
     }
 }
 

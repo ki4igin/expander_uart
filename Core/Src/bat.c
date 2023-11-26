@@ -1,6 +1,6 @@
 #include "bat.h"
 #include "adc_ex.h"
-#include "smbus.h"
+#include "smbus_fifo.h"
 
 static float voltage;
 
@@ -11,6 +11,14 @@ static float voltage;
 
 #define RES_DIV                (R2 / (R1 + R2))
 
+#define MIN(x, y)              (((x) < (y)) ? (x) : (y))
+#define MAX(x, y)              (((x) > (y)) ? (x) : (y))
+
+#define SLA                    0x09
+
+#define CHARGE_CURRENT_MAX_mA  8064
+#define INPUT_CURRENT_MAX_mA   11004
+#define CHARGE_VOLTAGE_MAX_mV  19200
 #define CHARGE_CURRENT_STEP_mA 128
 #define INPUT_CURRENT_STEP_mA  256
 #define CHARGE_VOLTAGE_STEP_mV 16
@@ -30,19 +38,19 @@ enum cmd {
     CMD_DEVICE_ID = 0xFF,
 };
 
-static uint16_t get_bits_val_charge_current(uint16_t cur_mA)
+static uint16_t get_bits_val_charge_current(uint16_t mA)
 {
-    return (cur_mA / CHARGE_CURRENT_STEP_mA) << CHARGE_CURRENT_Pos;
+    return (mA / CHARGE_CURRENT_STEP_mA) << CHARGE_CURRENT_Pos;
 }
 
-static uint16_t get_bits_val_input_current(uint16_t cur_mA)
+static uint16_t get_bits_val_input_current(uint16_t mA)
 {
-    return (cur_mA / INPUT_CURRENT_STEP_mA) << INPUT_CURRENT_Pos;
+    return (mA / INPUT_CURRENT_STEP_mA) << INPUT_CURRENT_Pos;
 }
 
-static uint16_t get_bits_val_charge_voltage(uint16_t vol_mV)
+static uint16_t get_bits_val_charge_voltage(uint16_t mV)
 {
-    return (vol_mV / CHARGE_VOLTAGE_STEP_mV) << CHARGE_VOLTAGE_Pos;
+    return (mV / CHARGE_VOLTAGE_STEP_mV) << CHARGE_VOLTAGE_Pos;
 }
 
 static float convert_adc2voltage(uint16_t adc)
@@ -52,18 +60,37 @@ static float convert_adc2voltage(uint16_t adc)
 
 void bat_init(void)
 {
+    struct smbus_read_data r = {0};
+    smbus_fifo_read(SLA, CMD_DEVICE_ID, &r);
+    while (r.is_ready == 0) {
+    }
+    if (r.val != DEVICE_ID) {
+        return;
+    }
+
+    bat_set_charge_voltage(14000);
+    bat_set_charge_current(3000);
 }
 
-void bat_set_charge_current()
+void bat_set_charge_current(uint16_t mA)
 {
+    mA = MIN(mA, CHARGE_CURRENT_MAX_mA);
+    uint16_t b = get_bits_val_charge_current(mA);
+    smbus_fifo_write(SLA, CMD_CHARGE_CURRENT, b);
 }
 
-void bat_set_input_current()
+void bat_set_input_current(uint16_t mA)
 {
+    mA = MIN(mA, INPUT_CURRENT_MAX_mA);
+    uint16_t b = get_bits_val_input_current(mA);
+    smbus_fifo_write(SLA, CMD_INPUT_CURRENT, b);
 }
 
-void bat_set_charge_voltage()
+void bat_set_charge_voltage(uint16_t mV)
 {
+    mV = MIN(mV, CHARGE_VOLTAGE_MAX_mV);
+    uint16_t b = get_bits_val_charge_voltage(mV);
+    smbus_fifo_write(SLA, CMD_CHARGE_VOLTAGE, b);
 }
 
 float bat_get_voltage(void)
@@ -74,13 +101,4 @@ float bat_get_voltage(void)
 void adc_bat_data_ready_callback(uint16_t data)
 {
     voltage = convert_adc2voltage(data);
-}
-
-void smbus_write_callback(void)
-{
-}
-
-void smbus_read_callback(uint16_t recv_data)
-{
-    (void)recv_data;
 }

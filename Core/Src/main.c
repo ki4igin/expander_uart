@@ -4,6 +4,7 @@
 #include "usart.h"
 #include "gpio.h"
 #include "aura.h"
+#include "bat.h"
 
 
 void SystemClock_Config(void);
@@ -46,6 +47,7 @@ int main(void)
 
     /* Infinite loop */
     aura_init();
+    bat_init();
 
     while (1) {
         aura_process();
