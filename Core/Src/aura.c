@@ -3,7 +3,7 @@
 #include "assert.h"
 #include "crc16.h"
 #include "usart_ex.h"
-#include "fifo.h"
+#include "send_fifo.h"
 #include "dict.h"
 #include "gpio.h"
 #include "relay.h"
@@ -27,7 +27,7 @@ static dict_declare(map, AURA_MAX_REPEATERS * (UART_COUNT - 1));
 
 #define map ((struct dict *)map_buf)
 
-struct fifo send_fifo;
+struct send_fifo send_fifo;
 
 enum state_recv {
     STATE_RECV_START = 0,
@@ -272,7 +272,7 @@ static void send_relay_state()
     p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
     p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
     crc16_add2pack(p, sizeof(struct pack_relay));
-    fifo_push(&send_fifo, p, sizeof(struct pack_relay));
+    send_fifo_push(&send_fifo, p, sizeof(struct pack_relay));
 }
 
 static void cmd_write_data(void)
@@ -329,14 +329,14 @@ static void cmd_work_master()
         pnt->header.cnt = cnt_send_pack++;
         pnt->header.uid_dest = p->header.uid_src;
         crc16_add2pack(pnt, sizeof(struct pack_whoami));
-        fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
+        send_fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
     } break;
     case CMD_REQ_DATA: {
         struct pack_state *pnt = &pack_state;
         pnt->header.cnt = cnt_send_pack++;
         pnt->header.uid_dest = p->header.uid_src;
         crc16_add2pack(pnt, sizeof(struct pack_state));
-        fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
+        send_fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
 
     } break;
     case CMD_REQ_WRITE: {
@@ -376,13 +376,13 @@ static void cmd_work_slave(uint32_t num)
                            + p->header.data_sz
                            + sizeof(crc16_t);
         crc16_add2pack(p, pack_size);
-        fifo_push(&send_fifo, p, pack_size);
+        send_fifo_push(&send_fifo, p, pack_size);
     } break;
     default: {
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
                            + sizeof(crc16_t);
-        fifo_push(&send_fifo, p, pack_size);
+        send_fifo_push(&send_fifo, p, pack_size);
     } break;
     }
     aura_flags_pack_received[num] = 0;
@@ -390,19 +390,19 @@ static void cmd_work_slave(uint32_t num)
 
 static void send_resp_data()
 {
-    if (fifo_is_empty(&send_fifo)) {
+    if (send_fifo_is_empty(&send_fifo)) {
         return;
     }
     if (uarts[0].tx.count != 0) {
         return;
     }
     // taking data from fifo
-    struct pack *p = (struct pack *)fifo_get_ptail(&send_fifo);
+    struct pack *p = (struct pack *)send_fifo_get_ptail(&send_fifo);
 
     uint32_t pack_size = sizeof(struct header)
                        + p->header.data_sz
                        + sizeof(crc16_t);
-    fifo_inc_tail(&send_fifo, pack_size);
+    send_fifo_inc_tail(&send_fifo, pack_size);
     uart_send_array(&uarts[0], p, pack_size);
 }
 
