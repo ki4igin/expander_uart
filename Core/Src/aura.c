@@ -56,6 +56,7 @@ enum chunk_type {
 };
 
 enum cmd {
+    CMD_NONE = 0,
     CMD_REQ_WHOAMI = 1,
     CMD_ANS_WHOAMI = 2,
     CMD_REQ_DATA = 3,
@@ -69,12 +70,10 @@ enum cmd {
 enum chunk_id {
     CHUNK_ID_TYPE = 1,
     CHUNK_ID_UIDS = 2,
-    CHUNK_ID_OPEN_REL = 3,
-    CHUNK_ID_CLOSE_REL = 4,
-    CHUNK_ID_ONOFF_REL1 = 5,
-    CHUNK_ID_ONOFF_REL2 = 6,
-    CHUNK_ID_WETSENS = 7,
-    CHUNK_ID_VOLT = 8,
+    CHUNK_ID_WETSENS = 3,
+    CHUNK_ID_RELAY1_STATUS = 4,
+    CHUNK_ID_RELAY2_STATUS = 5,
+    CHUNK_ID_BAT_VOLT = 6,
 };
 
 enum device_type {
@@ -125,118 +124,19 @@ struct chunk_u16 {
 };
 
 struct chunk {
-    uint8_t id;
-    uint8_t type;
-    uint16_t size;
+    struct chunk_hdr hdr;
     uint8_t data[];
 };
 
-struct pack {
+struct __PACKED pack {
     struct header header;
-
-    // union {
-    //     struct chunk chunk[AURA_MAX_CHUNK_CNT];
-    //     uint8_t raw_data[AURA_MAX_DATA_SIZE];
-    // } data;
-
     uint8_t data[AURA_MAX_DATA_SIZE];
     crc16_t crc;
 };
 
-// clang-format off
-static struct __PACKED pack_whoami {
-    struct header header;
-    struct chunk_u32 device_type;
-    crc16_t crc;
-} pack_whoami = {
-    .header = {
-        .protocol = AURA_PROTOCOL,
-        .cmd = CMD_ANS_WHOAMI,
-        .data_sz = sizeof(struct chunk_u32),
-    },
-    .device_type = {
-        .hdr = {
-            .id = CHUNK_ID_TYPE,
-            .type = CHUNK_TYPE_U32,
-            .size = sizeof(uint32_t),
-        },
-        .val = DEVICE_TYPE_EXPANDER,
-    },
+static struct __PACKED pack pack_ans = {
+    .header = {.protocol = AURA_PROTOCOL},
 };
-
-static struct __PACKED pack_state {
-    struct header header;
-    struct chunk_u16 sensors;
-    struct chunk_u16 battery;
-    struct chunk_u16 relays[2];
-    crc16_t crc;
-} pack_state = {
-    .header = {
-        .protocol = AURA_PROTOCOL,
-        .uid_dest = AURA_PC_ID,
-        .cmd = CMD_ANS_DATA,
-        .data_sz = sizeof(struct pack_state) 
-                 - sizeof(struct header) 
-                 - sizeof(crc16_t),
-    },
-    .sensors = {
-        .hdr = {
-            .id = CHUNK_ID_WETSENS,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-    .battery = {
-        .hdr = {
-            .id = CHUNK_ID_VOLT,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-    .relays[0] = {
-        .hdr = {
-            .id = CHUNK_ID_ONOFF_REL1,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-    .relays[1] = {
-        .hdr = {
-            .id = CHUNK_ID_ONOFF_REL2,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-};
-
-static struct __PACKED pack_relay {
-    struct header header;
-    struct chunk_u16 relays[2];
-    crc16_t crc;
-} pack_relay = {
-    .header = {
-        .protocol = AURA_PROTOCOL,
-        .uid_dest = AURA_PC_ID,
-        .cmd = CMD_ANS_WRITE,
-        .data_sz = 2*sizeof(struct chunk_u16),
-    },
-    .relays[0] = {
-        .hdr = {
-            .id = CHUNK_ID_ONOFF_REL1,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-    .relays[1] = {
-        .hdr = {
-            .id = CHUNK_ID_ONOFF_REL2,
-            .type = CHUNK_TYPE_U16,
-            .size = sizeof(uint16_t),
-        },
-    },
-};
-
-// clang-format on
 
 static enum state_recv states_recv[UART_COUNT] = {0};
 static struct pack packs[UART_COUNT] __ALIGNED(8);
@@ -251,45 +151,53 @@ static void aura_recv_package(uint32_t num)
     uart_recv_array(u, p, sizeof(struct header));
 }
 
-static void upd_state()
+static void add_chunk_u32(void **next_chunk, enum chunk_id id, uint32_t val)
 {
-    if (LL_ADC_IsEnabled(ADC1)) {
-        LL_ADC_REG_StartConversionSWStart(ADC1);
-    }
-    struct pack_state *p = &pack_state;
-    p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
-    p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
+    struct chunk_u32 *c = (struct chunk_u32 *)*next_chunk;
+    c->hdr.id = id;
+    c->hdr.type = CHUNK_TYPE_U32;
+    c->hdr.size = sizeof(c->val);
+    c->val = val;
+    *next_chunk = (void *)((uint32_t)*next_chunk + sizeof(*c));
 }
 
-static void send_relay_state()
+static void add_chunk_u16(void **next_chunk, enum chunk_id id, uint16_t val)
 {
-    struct pack_relay *p = &pack_relay;
-
-    p->header.cnt = cnt_send_pack++;
-    p->header.uid_src = pack_whoami.header.uid_src;
-    p->header.uid_dest = packs[0].header.uid_src;
-    p->relays[0].val = relay_is_open(1) ? 0x00FF : 0x0000;
-    p->relays[1].val = relay_is_open(2) ? 0x00FF : 0x0000;
-    crc16_add2pack(p, sizeof(struct pack_relay));
-    send_fifo_push(&send_fifo, p, sizeof(struct pack_relay));
+    struct chunk_u16 *c = (struct chunk_u16 *)*next_chunk;
+    c->hdr.id = id;
+    c->hdr.type = CHUNK_TYPE_U16;
+    c->hdr.size = sizeof(c->val);
+    c->val = val;
+    *next_chunk = (void *)((uint32_t)*next_chunk + sizeof(*c));
 }
 
-static void cmd_write_data(void)
+static void cmd_write_data(const struct pack *req, void **next_ans_chunk)
 {
-    struct pack *p = &packs[0];
-    struct chunk_u16 *c = (struct chunk_u16 *)p->data;
+    int32_t req_data_size = req->header.data_sz;
+    void *next_req_chunk = (void *)req->data;
 
-    switch (c->hdr.id) {
-    case CHUNK_ID_OPEN_REL: {
-        relay_open(c->val);
-        send_relay_state();
-    } break;
-    case CHUNK_ID_CLOSE_REL: {
-        relay_close(c->val);
-        send_relay_state();
-    } break;
-    default: {
-    } break;
+    while (req_data_size > 0) {
+        struct chunk_hdr *hdr = (struct chunk_hdr *)next_req_chunk;
+        uint32_t chunk_size = hdr->size + sizeof(struct chunk_hdr);
+        next_req_chunk = (void *)((uint32_t)next_req_chunk + chunk_size);
+        req_data_size -= chunk_size;
+
+        switch (hdr->id) {
+        case CHUNK_ID_RELAY1_STATUS:
+        case CHUNK_ID_RELAY2_STATUS: {
+            enum relay relay = (hdr->id == CHUNK_ID_RELAY1_STATUS) ? RELAY1 : RELAY2;
+            struct chunk_u16 *c = (struct chunk_u16 *)hdr;
+            if (c->val == 0x00FF) {
+                relay_open(relay);
+            } else if (c->val == 0x0000) {
+                relay_close(relay);
+            }
+            uint16_t data = relay_is_open(relay) ? 0x00FF : 0x0000;
+            add_chunk_u16(next_ans_chunk, hdr->id, data);
+        } break;
+        default: {
+        } break;
+        }
     }
 }
 
@@ -300,49 +208,63 @@ static void cmd_work_master()
     }
     aura_flags_pack_received[0] = 0;
 
-    struct pack *p = &packs[0];
-    uint32_t pack_size = sizeof(struct header)
-                       + p->header.data_sz
-                       + sizeof(crc16_t);
-    if (p->header.uid_dest == 0) {
+    struct pack *req = &packs[0];
+    uint32_t pack_size = sizeof(req->header)
+                       + req->header.data_sz
+                       + sizeof(req->crc);
+    if (req->header.uid_dest == 0) {
         for (uint32_t i = 1; i < UART_COUNT; i++) {
-            uart_send_array(&uarts[i], p, pack_size);
+            uart_send_array(&uarts[i], req, pack_size);
         }
     } else {
-        uint32_t idx = dict_get_idx(map, p->header.uid_dest);
+        uint32_t idx = dict_get_idx(map, req->header.uid_dest);
         if (idx != -1U) {
             uint32_t uart_num = map->kvs[idx].value;
-            uart_send_array(&uarts[uart_num], p, pack_size);
+            uart_send_array(&uarts[uart_num], req, pack_size);
         }
     }
-    if ((p->header.uid_dest != 0)
-        && (p->header.uid_dest != pack_whoami.header.uid_src)) {
+    if ((req->header.uid_dest != 0)
+        && (req->header.uid_dest != pack_ans.header.uid_src)) {
         return;
     }
 
-    switch (p->header.cmd) {
+    struct pack *ans = &pack_ans;
+    ans->header.cnt = cnt_send_pack++;
+    ans->header.uid_dest = req->header.uid_src;
+    ans->header.cmd = CMD_NONE;
+
+    void *next_ans_chunk = ans->data;
+
+    switch (req->header.cmd) {
     case CMD_REQ_WHOAMI: {
         dict_clear(map);
-        struct pack_whoami *pnt = &pack_whoami;
-        pnt->header.cnt = cnt_send_pack++;
-        pnt->header.uid_dest = p->header.uid_src;
-        crc16_add2pack(pnt, sizeof(struct pack_whoami));
-        send_fifo_push(&send_fifo, pnt, sizeof(struct pack_whoami));
+        ans->header.cmd = CMD_ANS_WHOAMI;
+        add_chunk_u32(next_ans_chunk, CHUNK_ID_TYPE, DEVICE_TYPE_EXPANDER);
     } break;
     case CMD_REQ_DATA: {
-        struct pack_state *pnt = &pack_state;
-        pnt->header.cnt = cnt_send_pack++;
-        pnt->header.uid_dest = p->header.uid_src;
-        crc16_add2pack(pnt, sizeof(struct pack_state));
-        send_fifo_push(&send_fifo, pnt, sizeof(struct pack_state));
+        ans->header.cmd = CMD_ANS_DATA;
+        add_chunk_u16(next_ans_chunk, CHUNK_ID_WETSENS, sens_get_state());
+        add_chunk_u16(next_ans_chunk, CHUNK_ID_BAT_VOLT, bat_get_voltage());
+        add_chunk_u16(next_ans_chunk, CHUNK_ID_RELAY1_STATUS,
+                      relay_is_open(RELAY1) ? 0x00FF : 0x0000);
+        add_chunk_u16(next_ans_chunk, CHUNK_ID_RELAY2_STATUS,
+                      relay_is_open(RELAY2) ? 0x00FF : 0x0000);
 
     } break;
     case CMD_REQ_WRITE: {
-        cmd_write_data();
+        ans->header.cmd = CMD_ANS_WRITE;
+        cmd_write_data(req, &next_ans_chunk);
     } break;
     default: {
     } break;
     }
+
+    ans->header.data_sz = (uint32_t)next_ans_chunk - (uint32_t)ans->data;
+    uint32_t pack_ans_size = sizeof(ans->header)
+                           + ans->header.data_sz
+                           + sizeof(pack_ans.crc);
+    crc16_add2pack(ans, pack_ans_size);
+    send_fifo_push(&send_fifo, ans, pack_ans_size);
 }
 
 static void cmd_work_slave(uint32_t num)
@@ -362,13 +284,13 @@ static void cmd_work_slave(uint32_t num)
             c->hdr.id = CHUNK_ID_UIDS;
             c->hdr.type = CHUNK_TYPE_ARR_U32,
             c->hdr.size = sizeof(struct chunk_u32);
-            c->val = pack_whoami.header.uid_src;
+            c->val = pack_ans.header.uid_src;
         } else {
             p->header.data_sz += sizeof(uint32_t);
             struct chunk_u32arr *c_arr = (struct chunk_u32arr *)c;
             uint32_t uids_count = c->hdr.size / sizeof(uint32_t);
             c->hdr.size += sizeof(uint32_t);
-            c_arr->arr[uids_count] = pack_whoami.header.uid_src;
+            c_arr->arr[uids_count] = pack_ans.header.uid_src;
         }
         uint32_t pack_size = sizeof(struct header)
                            + p->header.data_sz
@@ -406,7 +328,6 @@ static void send_resp_data()
 
 void aura_process(void)
 {
-    upd_state();
     cmd_work_master();
     for (uint32_t i = 1; i < UART_COUNT; i++) {
         cmd_work_slave(i);
@@ -416,15 +337,9 @@ void aura_process(void)
 
 void aura_init(void)
 {
-    pack_whoami.header.uid_src = uid_hash();
+    uint32_t uid = uid_hash();
+    pack_ans.header.uid_src = uid;
     aura_recv_package(0);
-}
-
-void aura_measure(void)
-{
-    struct pack_state *p = &pack_state;
-    p->sensors.val = sens_get_state();
-    p->battery.val = bat_get_voltage();
 }
 
 void uart_recv_complete_callback(struct uart *u)

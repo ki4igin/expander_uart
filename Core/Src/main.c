@@ -6,7 +6,6 @@
 #include "aura.h"
 #include "bat.h"
 
-
 void SystemClock_Config(void);
 
 /**
@@ -48,8 +47,12 @@ int main(void)
     /* Infinite loop */
     aura_init();
     bat_init();
+    uint32_t cnt = 0;
 
     while (1) {
+        if (LL_ADC_IsEnabled(ADC1) && ((cnt++ & 0xFFF) == 0xFFF)) {
+            LL_ADC_REG_StartConversionSWStart(ADC1);
+        }
         aura_process();
     }
 }
