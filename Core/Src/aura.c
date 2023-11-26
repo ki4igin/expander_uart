@@ -1,4 +1,5 @@
 #include "aura.h"
+#include "chunk.h"
 #include "uid_hash.h"
 #include "assert.h"
 #include "crc16.h"
@@ -10,18 +11,9 @@
 #include "sens.h"
 #include "bat.h"
 
-#define AURA_PROTOCOL       0x41525541U
-#define AURA_PC_ID          0x00000000U
-#define AURA_MAX_REPEATERS  2
-#define AURA_EXPANDER_ID    8
-#define AURA_MAX_DATA_SIZE  128
-#define AURA_CHUNK_HDR_SIZE 4
-#define AURA_HDR_SIZE       20
-
-#define AURA_MAX_DEVICES    8
-
-#define AURA_SENS_CNT       8
-#define AURA_RELAY_CNT      2
+#define AURA_PROTOCOL      0x41525541U
+#define AURA_MAX_REPEATERS 2
+#define AURA_MAX_DATA_SIZE 128
 
 static dict_declare(map, AURA_MAX_REPEATERS *(UART_COUNT - 1));
 
@@ -34,27 +26,6 @@ enum state_recv {
     STATE_RECV_HEADER,
 };
 
-enum chunk_type {
-    CHUNK_TYPE_NONE = 0,
-    CHUNK_TYPE_I8 = 1,
-    CHUNK_TYPE_U8 = 2,
-    CHUNK_TYPE_I16 = 3,
-    CHUNK_TYPE_U16 = 4,
-    CHUNK_TYPE_I32 = 5,
-    CHUNK_TYPE_U32 = 6,
-    CHUNK_TYPE_F32 = 7,
-    CHUNK_TYPE_F64 = 8,
-    CHUNK_TYPE_STR = 9,
-    CHUNK_TYPE_ARR_I8 = 10,
-    CHUNK_TYPE_ARR_U8 = 11,
-    CHUNK_TYPE_ARR_I16 = 12,
-    CHUNK_TYPE_ARR_U16 = 13,
-    CHUNK_TYPE_ARR_I32 = 14,
-    CHUNK_TYPE_ARR_U32 = 15,
-    CHUNK_TYPE_ARR_F32 = 16,
-    CHUNK_TYPE_ARR_F64 = 17,
-};
-
 enum cmd {
     CMD_NONE = 0,
     CMD_REQ_WHOAMI = 1,
@@ -65,15 +36,6 @@ enum cmd {
     CMD_ANS_WRITE = 6,
     CMD_REQ_READ = 7,
     CMD_ANS_READ = 8,
-};
-
-enum chunk_id {
-    CHUNK_ID_TYPE = 1,
-    CHUNK_ID_UIDS = 2,
-    CHUNK_ID_WETSENS = 3,
-    CHUNK_ID_RELAY1_STATUS = 4,
-    CHUNK_ID_RELAY2_STATUS = 5,
-    CHUNK_ID_BAT_VOLT = 6,
 };
 
 enum device_type {
@@ -97,37 +59,6 @@ struct header {
     uint16_t data_sz;
 };
 
-struct chunk_hdr {
-    uint8_t id;
-    uint8_t type;
-    uint16_t size;
-};
-
-struct chunk_u32 {
-    struct chunk_hdr hdr;
-    uint32_t val;
-};
-
-struct chunk_u32arr {
-    struct chunk_hdr hdr;
-    uint32_t arr[];
-};
-
-struct chunk_f32 {
-    struct chunk_hdr hdr;
-    float val;
-};
-
-struct chunk_u16 {
-    struct chunk_hdr hdr;
-    uint16_t val;
-};
-
-struct chunk {
-    struct chunk_hdr hdr;
-    uint8_t data[];
-};
-
 struct __PACKED pack {
     struct header header;
     uint8_t data[AURA_MAX_DATA_SIZE];
@@ -149,26 +80,6 @@ static void aura_recv_package(uint32_t num)
     struct uart *u = &uarts[num];
     struct pack *p = &packs[num];
     uart_recv_array(u, p, sizeof(struct header));
-}
-
-static void add_chunk_u32(void **next_chunk, enum chunk_id id, uint32_t val)
-{
-    struct chunk_u32 *c = (struct chunk_u32 *)*next_chunk;
-    c->hdr.id = id;
-    c->hdr.type = CHUNK_TYPE_U32;
-    c->hdr.size = sizeof(c->val);
-    c->val = val;
-    *next_chunk = (void *)((uint32_t)*next_chunk + sizeof(*c));
-}
-
-static void add_chunk_u16(void **next_chunk, enum chunk_id id, uint16_t val)
-{
-    struct chunk_u16 *c = (struct chunk_u16 *)*next_chunk;
-    c->hdr.id = id;
-    c->hdr.type = CHUNK_TYPE_U16;
-    c->hdr.size = sizeof(c->val);
-    c->val = val;
-    *next_chunk = (void *)((uint32_t)*next_chunk + sizeof(*c));
 }
 
 static void cmd_write_data(const struct pack *req, void **next_ans_chunk)
@@ -352,7 +263,7 @@ void uart_recv_complete_callback(struct uart *u)
     case STATE_RECV_START: {
         *s = STATE_RECV_HEADER;
 
-        if (p->header.data_sz > AURA_MAX_DATA_SIZE) {
+        if (p->header.data_sz > sizeof(p->data)) {
             p->header.data_sz = 0;
         }
 
