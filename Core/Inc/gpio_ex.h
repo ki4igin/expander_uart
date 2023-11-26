@@ -22,8 +22,8 @@
 #define RELAY2_Pin          LL_GPIO_PIN_1
 
 #define LED_GPIO_Port       GPIOD
-#define GLED_GREEN_Pin      LL_GPIO_PIN_4
-#define GLED_RED_Pin        LL_GPIO_PIN_5
+#define LED_GREEN_Pin      LL_GPIO_PIN_4
+#define LED_RED_Pin        LL_GPIO_PIN_5
 
 #define gpio_on_off_toggle_declare(_name, _port, _pin) \
     inline static void gpio_##_name##_on(void)         \
@@ -40,8 +40,8 @@
     }
 
 // clang-format off
-gpio_on_off_toggle_declare(ledr, LED_GPIO_Port, GLED_RED_Pin)
-gpio_on_off_toggle_declare(ledg, LED_GPIO_Port, GLED_GREEN_Pin)
+gpio_on_off_toggle_declare(ledr, LED_GPIO_Port, LED_RED_Pin)
+gpio_on_off_toggle_declare(ledg, LED_GPIO_Port, LED_GREEN_Pin)
 // clang-format on
 
 static inline void led_blink_red()
