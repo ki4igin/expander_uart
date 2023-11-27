@@ -9,6 +9,6 @@ struct smbus_read_data {
 };
 
 void smbus_fifo_write(uint8_t sla, uint8_t cmd, uint16_t data);
-void smbus_fifo_read(uint8_t sla, uint8_t cmd, struct smbus_read_data *data);
+void smbus_fifo_read(uint8_t sla, uint8_t cmd, volatile struct smbus_read_data *data);
 
 #endif /* __I2C_H__ */

@@ -5,6 +5,8 @@
 
 #define I2C I2C1
 
+volatile uint32_t smbus_is_busy = 0;
+
 stack_declare(sm, 5);
 #define stack ((struct stack *)sm_stack)
 
@@ -19,6 +21,7 @@ static void wr_func_end(uint8_t slaw, uint8_t cmd)
 {
     stack_push(stack, cmd);
     stack_push(stack, slaw);
+    smbus_is_busy = 1;
     LL_I2C_GenerateStartCondition(I2C);
 }
 
@@ -48,24 +51,36 @@ void I2C1_EV_IRQHandler(void)
             LL_I2C_EnableIT_BUF(I2C);
         }
         LL_I2C_ClearFlag_ADDR(I2C);
-    } else if (LL_I2C_IsActiveFlag_TXE(I2C)) {
+    } else if (LL_I2C_IsActiveFlag_TXE(I2C) && (LL_I2C_IsEnabledIT_BUF(I2C))) {
         uint32_t stack_count = stack_get_count(stack);
-        if ((stack_count > 3) || (stack_count == 0)) {
+        if ((stack_count > 3)) {
             LL_I2C_DisableIT_BUF(I2C);
+            LL_I2C_TransmitData8(I2C, stack_pop(stack));
+            LL_I2C_GenerateStartCondition(I2C);
+        } else if (stack_count == 1) {
+            LL_I2C_DisableIT_BUF(I2C);
+            LL_I2C_TransmitData8(I2C, stack_pop(stack));
+        } else {
+            LL_I2C_TransmitData8(I2C, stack_pop(stack));
         }
-        LL_I2C_TransmitData8(I2C, stack_pop(stack));
     } else if (LL_I2C_IsActiveFlag_BTF(I2C)) {
         if (stack_get_count(stack) == 0) {
-            smbus_write_callback();
-            goto stop;
-        } else if (LL_I2C_GetTransferDirection(I2C) == LL_I2C_DIRECTION_WRITE) {
-            LL_I2C_GenerateStartCondition(I2C);
-        } else {
-            uint16_t recv_data = LL_I2C_ReceiveData8(I2C)
-                               + (LL_I2C_ReceiveData8(I2C) << 8);
-            smbus_read_callback(recv_data);
-stop:
             LL_I2C_GenerateStopCondition(I2C);
+            while (LL_I2C_IsActiveFlag_BUSY(I2C)) {
+            }
+            smbus_is_busy = 0;
+            smbus_write_callback();
+        } else if (LL_I2C_GetTransferDirection(I2C) == LL_I2C_DIRECTION_WRITE) {
+        } else {
+            LL_I2C_GenerateStopCondition(I2C);
+            uint16_t recv_data1 = LL_I2C_ReceiveData8(I2C);
+            uint16_t recv_data2 = LL_I2C_ReceiveData8(I2C);
+            uint16_t recv_data = recv_data1 + (recv_data2 << 8);
+
+            while (LL_I2C_IsActiveFlag_BUSY(I2C)) {
+            }
+            smbus_is_busy = 0;
+            smbus_read_callback(recv_data);
         }
     }
 }
@@ -78,6 +93,10 @@ void I2C1_ER_IRQHandler(void)
     if (LL_I2C_IsActiveSMBusFlag_TIMEOUT(I2C)) {
         LL_I2C_ClearSMBusFlag_TIMEOUT(I2C);
     }
+    if (LL_I2C_IsActiveFlag_AF(I2C)) {
+        LL_I2C_ClearFlag_AF(I2C);
+    }
+    LL_I2C_GenerateStopCondition(I2C);
 }
 
 __WEAK void smbus_write_callback(void)

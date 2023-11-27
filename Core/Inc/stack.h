@@ -14,7 +14,7 @@ struct stack {
 
 static void stack_push(struct stack *s, uint8_t data)
 {
-    s->data[s->count] = data;
+    s->data[s->count++] = data;
 }
 
 static uint8_t stack_pop(struct stack *s)

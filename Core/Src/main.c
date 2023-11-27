@@ -3,6 +3,7 @@
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
+#include "gpio_ex.h"
 #include "aura.h"
 #include "bat.h"
 
@@ -45,13 +46,17 @@ int main(void)
     MX_I2C1_Init();
 
     /* Infinite loop */
+		LL_mDelay(1000);
     aura_init();
     bat_init();
     uint32_t cnt = 0;
 
     while (1) {
         if (LL_ADC_IsEnabled(ADC1) && ((cnt++ & 0xFFF) == 0xFFF)) {
-            LL_ADC_REG_StartConversionSWStart(ADC1);
+            LL_ADC_REG_StartConversionSWStart(ADC1);           
+        }
+        if ((cnt & 0x3FFFF) == 0x3FFFF) {
+            gpio_ledg_toggle();           
         }
         aura_process();
     }

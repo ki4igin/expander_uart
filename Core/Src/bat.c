@@ -1,6 +1,7 @@
 #include "bat.h"
 #include "adc_ex.h"
 #include "smbus_fifo.h"
+#include "stm32f4xx_ll_utils.h"
 
 static uint16_t voltage;
 
@@ -9,7 +10,7 @@ static uint16_t voltage;
 #define ADC_REF_mV             3300U
 #define ADC_RESOLUTION         12U
 
-#define K_RES_DIV                ((R1 + R2) / R2)
+#define K_RES_DIV              ((R1 + R2) / R2)
 
 #define MIN(x, y)              (((x) < (y)) ? (x) : (y))
 #define MAX(x, y)              (((x) > (y)) ? (x) : (y))
@@ -60,14 +61,15 @@ static uint16_t convert_adc2voltage(uint16_t adc)
 
 void bat_init(void)
 {
-    struct smbus_read_data r = {0};
+    volatile struct smbus_read_data r = {0};
     smbus_fifo_read(SLA, CMD_DEVICE_ID, &r);
     while (r.is_ready == 0) {
     }
     if (r.val != DEVICE_ID) {
         return;
     }
-
+    // LL_mDelay(1);
+    bat_set_input_current(3000);
     bat_set_charge_voltage(14000);
     bat_set_charge_current(3000);
 }

@@ -2,6 +2,7 @@
 #include "smbus.h"
 #include "stm32f4xx_ll_i2c.h"
 #include "fifo.h"
+#include "stm32f4xx_ll_utils.h"
 
 #define slaw(_sla) ((_sla) << 1)
 #define slar(_sla) (((_sla) << 1) | 0x01)
@@ -26,7 +27,7 @@ static void send_next(void)
 {
     if (fifo_is_nonempty(fifo_send)) {
         union send_data req = {.raw = fifo_pop(fifo_send)};
-        if (req.slawr | 0x01) {
+        if (req.slawr & 0x01) {
             smbus_read(req.slawr, req.cmd);
         } else {
             smbus_write(req.slawr, req.cmd, req.data);
@@ -36,19 +37,19 @@ static void send_next(void)
 
 void smbus_fifo_write(uint8_t sla, uint8_t cmd, uint16_t data)
 {
-    if (smbus_is_busy()) {
+    if (smbus_is_busy) {
         union send_data s = {.slawr = slaw(sla), .cmd = cmd, .data = data};
-        fifo_push(fifo_send, s.data);
-    } else {
+        fifo_push(fifo_send, s.raw);
+    } else {        
         smbus_write(slaw(sla), cmd, data);
     }
 }
 
-void smbus_fifo_read(uint8_t sla, uint8_t cmd, struct smbus_read_data *data)
+void smbus_fifo_read(uint8_t sla, uint8_t cmd, volatile struct smbus_read_data *data)
 {
-    if (smbus_is_busy()) {
+    if (smbus_is_busy) {
         union send_data s = {.slawr = slar(sla), .cmd = cmd};
-        fifo_push(fifo_send, s.data);
+        fifo_push(fifo_send, s.raw);
     } else {
         smbus_read(slar(sla), cmd);
     }

@@ -42,4 +42,6 @@ void MX_I2C1_Init(void)
     I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
     LL_I2C_Init(I2C1, &I2C_InitStruct);
     LL_I2C_SetOwnAddress2(I2C1, 0);
+    LL_I2C_EnableIT_EVT(I2C1);
+    LL_I2C_EnableIT_ERR(I2C1);
 }
