@@ -7,6 +7,9 @@
 
 volatile uint32_t smbus_is_busy = 0;
 
+uint32_t *read_data;
+uint32_t is_read;
+
 stack_declare(sm, 5);
 #define stack ((struct stack *)sm_stack)
 
@@ -31,9 +34,10 @@ void smbus_write(uint8_t slaw, uint8_t cmd, uint16_t data)
     wr_func_end(slaw, cmd);
 }
 
-void smbus_read(uint8_t slar, uint8_t cmd)
+void smbus_read(uint8_t slar, uint8_t cmd, uint16_t *data)
 {
-    wr_func_start(0);
+    read_data = data;
+    stack_clear(stack);
     stack_push(stack, slar);
     uint8_t slaw = slar & 0xFE;
     wr_func_end(slaw, cmd);
@@ -44,18 +48,23 @@ void I2C1_EV_IRQHandler(void)
     if (LL_I2C_IsActiveFlag_SB(I2C)) {
         LL_I2C_TransmitData8(I2C, stack_pop(stack));
     } else if (LL_I2C_IsActiveFlag_ADDR(I2C)) {
-        if (LL_I2C_GetTransferDirection(I2C) == LL_I2C_DIRECTION_READ) {
-            LL_I2C_AcknowledgeNextData(I2C, LL_I2C_NACK);
-            LL_I2C_EnableBitPOS(I2C);
-        } else {
-            LL_I2C_EnableIT_BUF(I2C);
-        }
+        LL_I2C_EnableIT_BUF(I2C);
+
+        // if (LL_I2C_GetTransferDirection(I2C) == LL_I2C_DIRECTION_READ) {
+        //     LL_I2C_AcknowledgeNextData(I2C, LL_I2C_NACK);
+        //     LL_I2C_EnableBitPOS(I2C);
+        // } else {
+        // }
         LL_I2C_ClearFlag_ADDR(I2C);
     } else if (LL_I2C_IsActiveFlag_TXE(I2C) && (LL_I2C_IsEnabledIT_BUF(I2C))) {
+        if (is_read) {
+            LL_I2C_TransmitData8(I2C, stack_pop(stack));
+            LL_I2C_GenerateStartCondition(I2C);
+        }
+
         uint32_t stack_count = stack_get_count(stack);
         if ((stack_count > 3)) {
             LL_I2C_DisableIT_BUF(I2C);
-            LL_I2C_TransmitData8(I2C, stack_pop(stack));
             LL_I2C_GenerateStartCondition(I2C);
         } else if (stack_count == 1) {
             LL_I2C_DisableIT_BUF(I2C);
