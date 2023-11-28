@@ -47,6 +47,7 @@ int main(void)
 
     /* Infinite loop */
     aura_init();
+    LL_mDelay(1000);
     bat_init();
 
     uint32_t cnt = 0;
