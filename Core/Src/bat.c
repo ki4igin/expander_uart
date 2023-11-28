@@ -69,9 +69,9 @@ void bat_init(void)
         return;
     }
     // LL_mDelay(1);
-    bat_set_input_current(3000);
-    bat_set_charge_voltage(14000);
-    bat_set_charge_current(3000);
+    bat_set_input_current(500);
+    bat_set_charge_voltage(16000);
+    bat_set_charge_current(500);
 }
 
 void bat_set_charge_current(uint16_t mA)

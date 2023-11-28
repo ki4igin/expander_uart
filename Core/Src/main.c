@@ -55,7 +55,7 @@ int main(void)
         if (LL_ADC_IsEnabled(ADC1) && ((cnt & 0xFFF) == 0xFFF)) {
             LL_ADC_REG_StartConversionSWStart(ADC1);
         }
-        if ((cnt & 0xFFFFF) == 0xFFFFF) {
+        if ((cnt & 0x3FFFF) == 0x3FFFF) {
             gpio_ledg_toggle();
         }
         if ((cnt & 0xFFFFFF) == 0xFFFFFF) {
