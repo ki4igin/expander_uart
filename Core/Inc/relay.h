@@ -1,42 +1,35 @@
+#ifndef __RELAY_H__
+#define __RELAY_H__
+
 #include "stm32f4xx_ll_gpio.h"
-#include "gpio.h"
+#include "gpio_ex.h"
 
-inline static uint32_t relay_is_open(uint16_t num)
+enum relay {
+    RELAY1 = 1,
+    RELAY2 = 2,
+};
+
+const struct gpio relay_gpio[] = {
+    [RELAY1] = {.port = RELAY_GPIO_Port, .pin = RELAY1_Pin},
+    [RELAY2] = {.port = RELAY_GPIO_Port, .pin = RELAY2_Pin},
+};
+
+inline static uint32_t relay_is_open(enum relay r)
 {
-    switch(num)
-    {
-        case RELAY_1:
-            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_1);
-            break;
-        case RELAY_2:
-            return LL_GPIO_IsOutputPinSet(GPIO_RELAY, GPIO_PIN_RELAY_2);
-            break;
-    };
-    return 3;
+    struct gpio g = relay_gpio[r];
+    return LL_GPIO_IsOutputPinSet(g.port, g.pin);
 }
 
-inline static void relay_open(uint16_t num)
+inline static void relay_open(enum relay r)
 {
-    switch(num)
-    {
-        case RELAY_1:
-            LL_GPIO_SetOutputPin(GPIO_RELAY, GPIO_PIN_RELAY_1);
-            break;
-        case RELAY_2:
-            LL_GPIO_SetOutputPin(GPIO_RELAY, GPIO_PIN_RELAY_2);
-            break;
-    };
+    struct gpio g = relay_gpio[r];
+    return LL_GPIO_SetOutputPin(g.port, g.pin);
 }
 
-inline static void relay_close(uint16_t num)
+inline static void relay_close(enum relay r)
 {
-    switch(num)
-    {
-        case RELAY_1:
-            LL_GPIO_ResetOutputPin(GPIO_RELAY, GPIO_PIN_RELAY_1);
-            break;
-        case RELAY_2:
-            LL_GPIO_ResetOutputPin(GPIO_RELAY, GPIO_PIN_RELAY_2);
-            break;
-    };
+    struct gpio g = relay_gpio[r];
+    return LL_GPIO_ResetOutputPin(g.port, g.pin);
 }
+
+#endif
