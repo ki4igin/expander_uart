@@ -290,6 +290,8 @@ void uart_send_complete_callback(struct uart *u)
 
 void uart_recv_timeout_callback(struct uart *u)
 {
-    // uart_stop_recv();
-    // aura_recv_package(0);
+    uart_stop_recv(u);
+    if (u->num == 0) {
+        aura_recv_package(0);
+    }
 }

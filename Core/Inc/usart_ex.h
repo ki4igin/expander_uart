@@ -30,6 +30,12 @@ enum uart_num {
 
 struct uart {
     uint32_t num;
+
+    struct {
+        uint16_t is_enable;
+        uint16_t ms;
+    } timeout;
+
     USART_TypeDef *name;
 
     struct {
@@ -44,11 +50,13 @@ extern struct uart uarts[UART_COUNT];
 
 void uart_send_array(struct uart *u, void *data, uint32_t size);
 void uart_recv_array(struct uart *u, void *data, uint32_t size);
-void uart_stop_recv(void);
+void uart_stop_recv(struct uart *u);
 
 void uart_irq_callback(struct uart *u);
+void tim6_update_callback();
 
 void uart_send_complete_callback(struct uart *u);
 void uart_recv_complete_callback(struct uart *u);
+void uart_recv_timeout_callback(struct uart *u);
 
 #endif /* __USART_H__ */
