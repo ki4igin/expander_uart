@@ -73,9 +73,9 @@ void bat_init(void)
     }
     gpio_ledr_off();
     // LL_mDelay(1);
-    bat_set_input_current(500);
-    bat_set_charge_voltage(16000);
-    bat_set_charge_current(500);
+    bat_set_input_current(1000);
+    bat_set_charge_voltage(15000);
+    bat_set_charge_current(1000);
 }
 
 void bat_set_charge_current(uint16_t mA)
