@@ -5,15 +5,15 @@
 #include "tools.h"
 
 #define SEND_FIFO_SIZE (128 * 64)
-#define SEND_FIFO_LEN  (SEND_FIFO_SIZE / 4)
 
 #define USE_U8_DATA
 // #define USE_U32_DATA
 
 #ifdef USE_U8_DATA
+#define SEND_FIFO_LEN  (SEND_FIFO_SIZE)
 
 struct send_fifo {
-    uint32_t last_len_jump;
+    uint32_t last_jump;
     uint32_t head;
     uint32_t tail;
     uint8_t data[SEND_FIFO_LEN];
@@ -33,8 +33,9 @@ inline static void send_fifo_inc_tail(struct send_fifo *f, uint32_t size)
 
 inline static uint8_t *send_fifo_get_ptail(struct send_fifo *f)
 {
-    if ((SEND_FIFO_LEN - f->tail) < f->last_len_jump) {
+    if (f->tail >= f->last_jump) {
         f->tail = 0;
+        f->last_jump = SEND_FIFO_LEN;
     }
     return &f->data[f->tail];
 }
@@ -42,7 +43,7 @@ inline static uint8_t *send_fifo_get_ptail(struct send_fifo *f)
 inline static uint8_t *send_fifo_get_phead(struct send_fifo *f, uint32_t size)
 {
     if ((SEND_FIFO_LEN - f->head) < size) {
-        f->last_len_jump = size;
+        f->last_jump = f->head;
         f->head = 0;
     }
 
