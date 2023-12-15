@@ -1,5 +1,6 @@
 #include "main.h"
 #include "stm32f4xx_it.h"
+#include "stm32f4xx_ll_tim.h"
 #include "usart_ex.h"
 #include "adc_ex.h"
 #include "gpio.h"
@@ -141,5 +142,15 @@ void DMA2_Stream0_IRQHandler(void)
     LL_DMA_ClearFlag_TE0(DMA2);
     led_blink_red();
   }
+}
+
+void TIM6_DAC_IRQHandler(void)
+{
+  if (LL_TIM_IsActiveFlag_UPDATE(TIM6))
+  {
+    LL_TIM_ClearFlag_UPDATE(TIM6);
+    tim6_update_callback();
+  }
+  
 }
 

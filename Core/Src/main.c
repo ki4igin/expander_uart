@@ -2,6 +2,7 @@
 #include "adc.h"
 #include "i2c.h"
 #include "usart.h"
+#include "tim.h"
 #include "gpio.h"
 #include "gpio_ex.h"
 #include "aura.h"
@@ -41,6 +42,7 @@ int main(void)
     MX_USART2_UART_Init();
     MX_USART3_UART_Init();
     MX_USART6_UART_Init();
+    MX_TIM6_Init();
     ADC_Configure_DMA();
     MX_ADC1_Init();
     MX_I2C1_Init();

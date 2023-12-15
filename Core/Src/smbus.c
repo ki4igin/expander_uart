@@ -56,7 +56,6 @@ void I2C1_EV_IRQHandler(void)
         if ((stack_count > 3)) {
             LL_I2C_DisableIT_BUF(I2C);
             LL_I2C_TransmitData8(I2C, stack_pop(stack));
-            LL_I2C_GenerateStartCondition(I2C);
         } else if (stack_count == 1) {
             LL_I2C_DisableIT_BUF(I2C);
             LL_I2C_TransmitData8(I2C, stack_pop(stack));
@@ -71,6 +70,7 @@ void I2C1_EV_IRQHandler(void)
             smbus_is_busy = 0;
             smbus_write_callback();
         } else if (LL_I2C_GetTransferDirection(I2C) == LL_I2C_DIRECTION_WRITE) {
+            LL_I2C_GenerateStartCondition(I2C);
         } else {
             LL_I2C_GenerateStopCondition(I2C);
             uint16_t recv_data1 = LL_I2C_ReceiveData8(I2C);

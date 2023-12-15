@@ -2,6 +2,7 @@
 #include "adc_ex.h"
 #include "smbus_fifo.h"
 #include "stm32f4xx_ll_utils.h"
+#include "gpio_ex.h"
 
 static uint16_t voltage;
 
@@ -63,15 +64,18 @@ void bat_init(void)
 {
     volatile struct smbus_read_data r = {0};
     smbus_fifo_read(SLA, CMD_DEVICE_ID, &r);
-    while (r.is_ready == 0) {
+    uint32_t cnt = 0xFFFFF;
+    while ((cnt-- > 0) && (r.is_ready == 0)) {
     }
     if (r.val != DEVICE_ID) {
+        gpio_ledr_on();
         return;
     }
+    gpio_ledr_off();
     // LL_mDelay(1);
-    bat_set_input_current(500);
-    bat_set_charge_voltage(16000);
-    bat_set_charge_current(500);
+    bat_set_input_current(1000);
+    bat_set_charge_voltage(15000);
+    bat_set_charge_current(1000);
 }
 
 void bat_set_charge_current(uint16_t mA)
