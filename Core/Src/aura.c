@@ -233,6 +233,8 @@ static void send_resp_data()
     uint32_t pack_size = sizeof(struct header)
                        + p->header.data_sz
                        + sizeof(crc16_t);
+    if(p->header.cmd == CMD_ANS_WHOAMI || p->header.cmd == CMD_ANS_DATA) 
+        LL_mDelay(1);
     send_fifo_inc_tail(&send_fifo, pack_size);
     uart_send_array(&uarts[0], p, pack_size);
 }
