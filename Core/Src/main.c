@@ -43,6 +43,7 @@ int main(void)
     MX_USART3_UART_Init();
     MX_USART6_UART_Init();
     MX_TIM6_Init();
+    MX_TIM7_Init();
     ADC_Configure_DMA();
     MX_ADC1_Init();
     MX_I2C1_Init();

@@ -24,5 +24,5 @@ void UART9_IRQHandler(void);
 void ADC_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 
-
+void TIM7_IRQHandler(void);
 #endif /* __STM32F4xx_IT_H */
