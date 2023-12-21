@@ -119,8 +119,10 @@ static void cmd_work_master()
     if (aura_flags_pack_received[0] == 0) {
         return;
     }
-    LL_TIM_SetCounter(TIM7, 0);
-    aura_flag_send_delay = 1;
+    #ifdef DELAY
+        LL_TIM_SetCounter(TIM7, 0);
+        aura_flag_send_delay = 1;
+    #endif
     aura_flags_pack_received[0] = 0;
     
     struct pack *req = &packs[0];

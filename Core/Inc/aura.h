@@ -2,6 +2,7 @@
 #define __AURA_H
 
 #include "stm32f4xx.h"
+#define DELAY
 
 void aura_init(void);
 void aura_process(void);
