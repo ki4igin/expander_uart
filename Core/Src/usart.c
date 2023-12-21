@@ -2,6 +2,8 @@
 
 #include "usart.h"
 
+#define BAUDRATE 19200
+
 /* UART4 init function */
 void MX_UART4_Init(void)
 {
@@ -29,7 +31,7 @@ void MX_UART4_Init(void)
     NVIC_SetPriority(UART4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(UART4_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -68,7 +70,7 @@ void MX_UART5_Init(void)
     NVIC_SetPriority(UART5_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(UART5_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -107,7 +109,7 @@ void MX_UART7_Init(void)
     NVIC_SetPriority(UART7_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(UART7_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -146,7 +148,7 @@ void MX_UART8_Init(void)
     NVIC_SetPriority(UART8_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(UART8_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -185,7 +187,7 @@ void MX_UART9_Init(void)
     NVIC_SetPriority(UART9_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(UART9_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -225,7 +227,7 @@ void MX_USART1_UART_Init(void)
     NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(USART1_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -265,7 +267,7 @@ void MX_USART2_UART_Init(void)
     NVIC_SetPriority(USART2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(USART2_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -314,7 +316,7 @@ void MX_USART3_UART_Init(void)
     NVIC_SetPriority(USART3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(USART3_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -354,7 +356,7 @@ void MX_USART6_UART_Init(void)
     NVIC_SetPriority(USART6_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(USART6_IRQn);
 
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = BAUDRATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
