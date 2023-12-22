@@ -36,7 +36,8 @@ void uart_recv_array(struct uart *u, void *data, uint32_t size)
     u->rx.data = data;
     u->rx.count = size;
     // 115200 / 1000 / (1 + 8 + 1) = 11.2 >~ 8
-    u->timeout.ms = size / 8 + 2; 
+    // 19200 / 1000 / (1 + 8 + 1) = 1.92 >~ 1
+    u->timeout.ms = size / 1 + 2; 
     LL_USART_EnableIT_RXNE(u->name);
 }
 
