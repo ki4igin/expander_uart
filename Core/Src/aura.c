@@ -10,6 +10,7 @@
 #include "relay.h"
 #include "sens.h"
 #include "bat.h"
+#include "stm32f4xx_ll_tim.h"
 
 #define AURA_PROTOCOL      0x41525541U
 #define AURA_MAX_REPEATERS 2
@@ -72,6 +73,7 @@ static struct __PACKED pack pack_ans = {
 static enum state_recv states_recv[UART_COUNT] = {0};
 static struct pack packs[UART_COUNT] __ALIGNED(8);
 static uint32_t aura_flags_pack_received[UART_COUNT] = {0};
+static uint32_t aura_flag_send_delay = 0;
 static uint32_t cnt_send_pack = 0;
 
 static void aura_recv_package(uint32_t num)
@@ -117,8 +119,12 @@ static void cmd_work_master()
     if (aura_flags_pack_received[0] == 0) {
         return;
     }
+    #ifdef DELAY
+        LL_TIM_SetCounter(TIM7, 0);
+        aura_flag_send_delay = 1;
+    #endif
     aura_flags_pack_received[0] = 0;
-
+    
     struct pack *req = &packs[0];
     uint32_t pack_size = sizeof(req->header)
                        + req->header.data_sz
@@ -183,6 +189,7 @@ static void cmd_work_slave(uint32_t num)
     if (aura_flags_pack_received[num] == 0) {
         return;
     }
+
     struct pack *p = &packs[num];
 
     switch (p->header.cmd) {
@@ -227,14 +234,23 @@ static void send_resp_data()
     if (uarts[0].tx.count != 0) {
         return;
     }
+    if (aura_flag_send_delay){
+        return;
+    }
     // taking data from fifo
     struct pack *p = (struct pack *)send_fifo_get_ptail(&send_fifo);
 
     uint32_t pack_size = sizeof(struct header)
                        + p->header.data_sz
                        + sizeof(crc16_t);
+    
     send_fifo_inc_tail(&send_fifo, pack_size);
     uart_send_array(&uarts[0], p, pack_size);
+}
+
+void tim7_update_callback()
+{
+    aura_flag_send_delay = 0;
 }
 
 void aura_process(void)

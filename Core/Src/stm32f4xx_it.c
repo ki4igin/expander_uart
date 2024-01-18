@@ -154,3 +154,11 @@ void TIM6_DAC_IRQHandler(void)
   
 }
 
+void TIM7_IRQHandler(void)
+{
+  if (LL_TIM_IsActiveFlag_UPDATE(TIM7))
+  {
+    LL_TIM_ClearFlag_UPDATE(TIM7);
+    tim7_update_callback();
+  } 
+}
